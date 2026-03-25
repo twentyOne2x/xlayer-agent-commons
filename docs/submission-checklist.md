@@ -31,6 +31,7 @@ This file maps the hackathon form directly to the current XLayer Agent Commons b
 1. Project X post URL
 2. Demo screenshot or video URL
 3. Public GitHub repository URL
+   - `https://github.com/twentyOne2x/xlayer-agent-commons`
 4. Final XLayer transaction hash used in the submission
 5. Final XLayer wallet or contract address used in the demo
 6. AI model and version

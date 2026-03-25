@@ -27,9 +27,9 @@ Official OKX references:
 3. [okx-x402-payment](https://github.com/okx/onchainos-skills/tree/main/skills/okx-x402-payment)
 
 Hackathon status:
-1. [submission-checklist.md](/Users/user/PycharmProjects/attn-credit/spinouts/xlayer-agent-commons/docs/submission-checklist.md)
-2. [hackathon-readiness.md](/Users/user/PycharmProjects/attn-credit/spinouts/xlayer-agent-commons/docs/hackathon-readiness.md)
-3. [skill.md](/Users/user/PycharmProjects/attn-credit/spinouts/xlayer-agent-commons/skill.md)
+1. [submission-checklist.md](./docs/submission-checklist.md)
+2. [hackathon-readiness.md](./docs/hackathon-readiness.md)
+3. [skill.md](./skill.md)
 
 Important truth boundary:
 1. the official OKX x402 payment flow signs payment authorization for HTTP 402 resources,
@@ -65,7 +65,7 @@ spinouts/xlayer-agent-commons/
 ## Demo commands
 
 ```bash
-cd /Users/user/PycharmProjects/attn-credit/spinouts/xlayer-agent-commons
+cd xlayer-agent-commons
 npm run demo:matrica
 npm run demo:gift
 npm run demo:wallet

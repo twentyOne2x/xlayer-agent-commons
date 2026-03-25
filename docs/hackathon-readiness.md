@@ -31,7 +31,7 @@ What is still missing is the submission surface, not the repo shape:
 | Project X handle (`@attndotmarkets`) | yes | this is the chosen official project handle for submission |
 | Reply to the thread with intro + demo + GitHub | no | requires published assets and social action |
 | Registration form | no | requires manual form submission |
-| Public GitHub repository | partial | the split-ready repo exists locally at `spinouts/xlayer-agent-commons/`, but it has not been pushed to its own public GitHub remote yet |
+| Public GitHub repository | yes | `https://github.com/twentyOne2x/xlayer-agent-commons` is live |
 | Demo video | no | repo can drive it, but the recording is not produced yet |
 | X Layer mainnet tx hash | yes | real attn-hosted XLayer sponsor-gift and bounded-job hashes already exist |
 | X Layer wallet / contract address | yes | the treasury and recipient surfaces already exist; the standalone repo can also expose the wallet used in the demo |
