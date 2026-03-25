@@ -1,0 +1,14 @@
+{
+  "name": "xlayer-agent-commons",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "demo:matrica": "node ./scripts/demo.js matrica-start",
+    "demo:gift": "node ./scripts/demo.js gift",
+    "demo:wallet": "node ./scripts/demo.js wallet-status",
+    "demo:x402": "node ./scripts/demo.js x402",
+    "demo:full": "node ./scripts/demo.js full",
+    "test": "node --test ./test/*.test.js"
+  }
+}
+
