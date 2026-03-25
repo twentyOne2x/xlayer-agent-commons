@@ -28,8 +28,7 @@ Official OKX references:
 
 Hackathon status:
 1. [submission-checklist.md](./docs/submission-checklist.md)
-2. [hackathon-readiness.md](./docs/hackathon-readiness.md)
-3. [skill.md](./skill.md)
+2. [skill.md](./skill.md)
 
 Important truth boundary:
 1. the official OKX x402 payment flow signs payment authorization for HTTP 402 resources,
@@ -59,8 +58,9 @@ spinouts/xlayer-agent-commons/
 
 1. Copy `.env.example` to `.env`.
 2. Fill in the Matrica session values if you want to exercise the live gift path.
-3. Install the OKX `onchainos` CLI if you want wallet or x402 demos to run locally.
-4. Run one of the demo commands below.
+3. Store shared secrets in `~/.config/attn/shared.env` when possible. The demo loader reads that file before local `.env`.
+4. Install the OKX `onchainos` CLI if you want wallet or x402 demos to run locally.
+5. Run one of the demo commands below.
 
 ## Demo commands
 
@@ -69,7 +69,12 @@ cd xlayer-agent-commons
 npm run demo:matrica
 npm run demo:gift
 npm run demo:wallet
+npm run demo:wallet-login -- you@example.com
+npm run demo:wallet-verify -- 123456
+npm run demo:wallet-addresses
 npm run demo:x402
+npm run demo:swap-quote
+npm run demo:swap-execute
 npm run demo:full
 ```
 
@@ -80,9 +85,19 @@ What they do:
    - calls the live attn sponsor-gift endpoint and returns the gift receipt
 3. `demo:wallet`
    - checks whether `onchainos` is installed and, if it is, shows wallet session status
-4. `demo:x402`
+4. `demo:wallet-login`
+   - starts the OKX Agentic Wallet email OTP flow; pass the email as the extra CLI argument or set `OKX_WALLET_EMAIL`
+5. `demo:wallet-verify`
+   - verifies the OTP from the previous login step
+6. `demo:wallet-addresses`
+   - prints the logged-in wallet addresses and defaults to XLayer chain `196`
+7. `demo:x402`
    - sends the original request, expects `HTTP 402`, signs the payment with OKX tooling, then replays the request with the payment header
-5. `demo:full`
+8. `demo:swap-quote`
+   - asks OKX for a swap quote on the configured chain, including XLayer
+9. `demo:swap-execute`
+   - executes the configured swap through the logged-in OKX wallet
+10. `demo:full`
    - snapshots capabilities, wallet readiness, optional gift result, optional x402 replay result, and writes a proof bundle under `tmp/`
 
 ## Human flow
@@ -130,15 +145,24 @@ When those are missing, `demo:wallet` and `demo:x402` will report the missing de
 ## OKX setup
 
 1. install `onchainos`
-2. visit the [OKX Developer Portal](https://web3.okx.com/onchain-os/dev-portal)
-3. create API credentials and keep:
+2. easiest wallet-bootstrap path:
+   - run `npm run demo:wallet-login -- you@example.com`
+   - read the OTP from email
+   - run `npm run demo:wallet-verify -- 123456`
+   - run `npm run demo:wallet-addresses`
+3. the email path creates or reconnects the `OKX Agentic Wallet` and does not require API keys
+4. the same CLI also supports API-key wallet login when `OKX_API_KEY`, `OKX_SECRET_KEY`, and `OKX_PASSPHRASE` already exist in the operator environment
+5. use the [OKX Developer Portal](https://web3.okx.com/onchainos/dev-portal) when you need those credentials
+6. if you do need those credentials, create and keep:
    - `OKX_API_KEY`
    - `OKX_SECRET_KEY`
    - `OKX_PASSPHRASE`
-4. store them in `~/.config/attn/shared.env`, not in git
-5. rerun:
+7. store them in `~/.config/attn/shared.env`, not in git
+8. rerun:
    - `npm run demo:wallet`
    - `npm run demo:x402`
+   - `npm run demo:swap-quote`
+   - `npm run demo:swap-execute`
 
 ## Submission reminders
 
