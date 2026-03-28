@@ -37,7 +37,7 @@ This repo stays intentionally narrow:
 8. `scripts/demo-seed.ts`
    - print and write the smallest honest hackathon demo contract for the current repo state
 
-Exact source-to-target mapping lives in [docs/extraction-map.md](./docs/extraction-map.md). Shell behavior is documented in [docs/demo-shell.md](./docs/demo-shell.md). Submission packaging is documented in [docs/proof-pack.md](./docs/proof-pack.md).
+Exact source-to-target mapping lives in [docs/extraction-map.md](./docs/extraction-map.md). Shell behavior is documented in [docs/demo-shell.md](./docs/demo-shell.md). Submission packaging is documented in [docs/proof-pack.md](./docs/proof-pack.md). Live proof capture and import are documented in [docs/live-proof-import.md](./docs/live-proof-import.md).
 
 ## Quick start
 
@@ -98,6 +98,7 @@ Build the smallest honest hackathon package with:
 
 ```bash
 npm run demo:seed
+npm run proof-pack:import-live -- --input ./path/to/live-proof.json
 npm run proof-pack:export
 ```
 
@@ -107,7 +108,7 @@ This writes a stable pack under:
 tmp/submission-pack/latest
 ```
 
-The pack centers sponsor claim, swap, and proof-ledger evidence. If sponsor or swap artifacts are missing, the export still succeeds but marks `proof_ready` false and lists the exact blockers.
+The pack centers sponsor claim, swap, and proof-ledger evidence. The import step records real sponsor and swap tx-backed facts under `tmp/live-proof/latest`. If sponsor or swap artifacts are missing, the export still succeeds but marks `proof_ready` false and lists the exact blockers.
 
 ## CLI commands
 
@@ -147,7 +148,8 @@ What they do:
 6. the shell writes latest proof bundles under `tmp/demo-shell/<kind>/latest`
 7. the shell stores Matrica session plus latest sponsor-claim and swap state locally in the browser only
 8. the dedicated proof page reads the latest shell activity record plus current proof summaries
-9. the submission exporter gathers the latest sponsor, swap, and ledger records into `tmp/submission-pack/latest`
+9. the live-proof importer records real sponsor and swap tx-backed facts into `tmp/live-proof/latest`
+10. the submission exporter gathers the latest sponsor, swap, live-proof import, and ledger records into `tmp/submission-pack/latest`
 
 ## Intentionally excluded
 

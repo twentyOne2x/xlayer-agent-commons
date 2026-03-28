@@ -12,6 +12,7 @@
     "demo:wallet-addresses": "node ./scripts/demo.js wallet-addresses",
     "demo:x402": "node ./scripts/demo.js x402",
     "demo:full": "node ./scripts/demo.js full",
+    "proof-pack:import-live": "tsx ./scripts/import-live-proof.ts",
     "proof-pack:export": "tsx ./scripts/export-proof-pack.ts",
     "test": "node --test ./test/*.test.js"
   },

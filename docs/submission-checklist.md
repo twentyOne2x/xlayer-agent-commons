@@ -7,9 +7,12 @@ Use this checklist only after the sponsor and swap artifacts are real.
 1. `npm install`
 2. `npm test`
 3. `npm run demo:seed`
-4. `npm run proof-pack:export`
+4. `npm run proof-pack:import-live -- --input ./path/to/live-proof.json`
+5. `npm run proof-pack:export`
 
 Do not publish the submission until `tmp/submission-pack/latest/proof-pack.json` says `proof_ready: true`.
+
+If you already recorded live proof under `tmp/live-proof/latest`, rerun step 5 after every fresh export. Do not hand-edit the submission pack files.
 
 ## Recommended answers
 
@@ -41,6 +44,7 @@ Do not publish the submission until `tmp/submission-pack/latest/proof-pack.json`
 4. final sponsor tx hash for the run you are submitting
 5. final swap tx hash for the run you are submitting
 6. final wallet address used in the demo
+7. imported live-proof file or explicit CLI values used to record those facts
 
 ## Current proof posture
 
@@ -65,6 +69,7 @@ Do not publish the submission until `tmp/submission-pack/latest/proof-pack.json`
 4. swap artifact
 5. proof ledger artifact
 6. supporting sponsor / swap proof summaries when present
+7. live-proof import artifact when real sponsor / swap tx hashes have been recorded
 
 ## Publish rules
 
@@ -72,3 +77,4 @@ Do not publish the submission until `tmp/submission-pack/latest/proof-pack.json`
 2. do not call x402 live while `proof-pack.json` still reports it blocked / experimental
 3. do not claim sponsor proof if the latest sponsor artifact has no tx hash
 4. do not claim swap proof if the latest swap artifact has no tx hash
+5. do not call the repo submission-ready until the latest imported live proof and exported proof pack agree on sponsor + swap tx hashes
