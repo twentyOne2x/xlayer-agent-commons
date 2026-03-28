@@ -10,8 +10,11 @@ import {
   featureStatusSnapshot,
   fetchJourneySession,
   normalizeProofKind,
+  paidActionDefaults,
   persistProofKind,
+  persistPaidAction,
   proofOutputDir,
+  readProofLedger,
   readLatestProofKind,
   runSponsorClaim,
   sponsorClaimDefaults,
@@ -122,6 +125,7 @@ async function handleApi(req, res, url) {
       proofKinds: DEMO_PROOF_KINDS,
       status: featureStatusSnapshot(config),
       journeyDefaults: sponsorClaimDefaults(config),
+      paidActionDefaults: paidActionDefaults(config),
     });
     return;
   }
@@ -189,6 +193,25 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (req.method === "POST" && url.pathname === "/api/paid-action/run") {
+    try {
+      const body = await readRequestJson(req);
+      const result = await persistPaidAction(currentConfig(), body);
+      sendJson(res, 200, {
+        ok: true,
+        ...result,
+      });
+    } catch (error) {
+      sendJson(res, 500, {
+        ok: false,
+        error: {
+          code: error instanceof Error ? error.message : String(error),
+        },
+      });
+    }
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/api/proof/latest") {
     const kind = normalizeProofKind(url.searchParams.get("kind"));
     if (!kind) {
@@ -210,6 +233,15 @@ async function handleApi(req, res, url) {
 
   if (req.method === "GET" && url.pathname === "/api/proof/download") {
     await sendProofDownload(res, url);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/proof/ledger") {
+    const ledger = await readProofLedger(currentConfig());
+    sendJson(res, 200, {
+      ok: true,
+      ...ledger,
+    });
     return;
   }
 
@@ -256,8 +288,16 @@ async function requestListener(req, res) {
       await sendStatic(res, resolve(publicDir, "index.html"));
       return;
     }
+    if (url.pathname === "/proof" || url.pathname === "/proof.html") {
+      await sendStatic(res, resolve(publicDir, "proof.html"));
+      return;
+    }
     if (url.pathname === "/app.js") {
       await sendStatic(res, resolve(publicDir, "app.js"));
+      return;
+    }
+    if (url.pathname === "/proof.js") {
+      await sendStatic(res, resolve(publicDir, "proof.js"));
       return;
     }
     if (url.pathname === "/styles.css") {

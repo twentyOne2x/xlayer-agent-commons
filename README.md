@@ -29,7 +29,7 @@ This repo stays intentionally narrow:
 4. `src/okxAgenticWallet.js`
    - lifted XLayer wallet resolution plus swap / x402 / defi action executor shapes
 5. `apps/demo-shell/*`
-   - minimal runnable demo shell with feature-status, Matrica/session start, sponsor-claim, proof-run, and bundle-export surfaces
+   - minimal runnable demo shell with feature-status, Matrica/session start, sponsor-claim, post-claim paid action, proof-run, and proof-page surfaces
 
 Exact source-to-target mapping lives in [docs/extraction-map.md](./docs/extraction-map.md). Shell behavior is documented in [docs/demo-shell.md](./docs/demo-shell.md).
 
@@ -56,10 +56,12 @@ The shell exposes:
 1. feature status matrix
 2. Matrica session start and session-status polling
 3. explicit sponsor-claim form with campaign, wallet, amount, and idempotency inputs
-4. sponsor gift proof run
-5. bounded job proof run
-6. full proof-pack run
-7. latest proof bundle download
+4. one visible post-claim paid-action step backed by the bounded-job proof path
+5. a dedicated `/proof` page / activity ledger
+6. sponsor gift proof run
+7. bounded job proof run
+8. full proof-pack run
+9. latest proof bundle download
 
 x402 is shown as blocked / experimental in the shell on purpose.
 
@@ -98,7 +100,8 @@ What they do:
 3. a second gift attempt with a fresh idempotency key is expected to block
 4. bounded jobs capture reservation ids, payment ids, payment state, and tx hashes
 5. the shell writes latest proof bundles under `tmp/demo-shell/<kind>/latest`
-6. the shell stores Matrica session and sponsor-claim inputs locally in the browser only
+6. the shell stores Matrica session plus latest sponsor-claim and paid-action state locally in the browser only
+7. the dedicated proof page reads the latest shell activity record plus current proof summaries
 
 ## Intentionally excluded
 

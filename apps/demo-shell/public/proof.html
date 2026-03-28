@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>XLayer Agent Commons Proof Page</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <main class="shell">
+      <nav class="topnav panel">
+        <a class="nav-link" href="/">Journey</a>
+        <a class="nav-link current" href="/proof">Proof Page</a>
+      </nav>
+
+      <section class="hero panel">
+        <p class="eyebrow">Proof Page</p>
+        <h1>XLayer Activity Ledger</h1>
+        <p class="lede">
+          This page promotes the shell proof surface into a first-class ledger. It combines the latest standalone
+          sponsor-claim receipt and bounded-job proof summary without pretending blocked lanes are live.
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Latest Journey</p>
+            <h2>Overview</h2>
+          </div>
+          <button id="refresh-ledger" class="secondary">Refresh</button>
+        </div>
+        <div id="proof-overview" class="summary-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Ledger Notes</p>
+            <h2>Current Truth</h2>
+          </div>
+        </div>
+        <ul id="proof-notes" class="note-list"></ul>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Activity Ledger</p>
+            <h2>Latest Entries</h2>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Surface</th>
+                <th>Status</th>
+                <th>Tx Hash</th>
+                <th>Wallet</th>
+                <th>Campaign</th>
+                <th>Timestamp</th>
+                <th>Note</th>
+              </tr>
+            </thead>
+            <tbody id="proof-ledger-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Artifacts</p>
+            <h2>Download Latest Files</h2>
+          </div>
+        </div>
+        <div id="proof-downloads" class="actions"></div>
+        <p id="proof-status" class="hint">
+          The proof page stays empty until this shell has captured a sponsor claim or a bounded-job paid action.
+        </p>
+      </section>
+    </main>
+
+    <script type="module" src="/proof.js"></script>
+  </body>
+</html>

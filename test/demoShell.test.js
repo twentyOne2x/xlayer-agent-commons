@@ -2,10 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildProofLedgerView,
   demoShellPort,
   extractGiftId,
   featureStatusSnapshot,
   normalizeProofKind,
+  paidActionDefaults,
   proofOutputDir,
   sponsorClaimDefaults,
   summarizeClaimReceipt,
@@ -71,6 +73,24 @@ test("sponsorClaimDefaults produces explicit campaign and idempotency inputs", (
   assert.equal(defaults.idempotencyKey.startsWith("xlayer_claim_2026-03-28T12-00-00-000Z"), true);
 });
 
+test("paidActionDefaults produces explicit bounded-job defaults", () => {
+  const defaults = paidActionDefaults(
+    {
+      hosted: {
+        merchantId: "xlayer_onchainos_job",
+        jobAmountUsd: 1,
+      },
+    },
+    {
+      now: new Date("2026-03-28T12:00:00.000Z"),
+    },
+  );
+
+  assert.equal(defaults.merchantId, "xlayer_onchainos_job");
+  assert.equal(defaults.amountUsd, 1);
+  assert.equal(defaults.jobIdempotencyKey.startsWith("xlayer_job_2026-03-28T12-00-00-000Z"), true);
+});
+
 test("session and claim summaries preserve honest response signals", () => {
   const sessionSummary = summarizeSessionReceipt({
     session: {
@@ -109,4 +129,50 @@ test("session and claim summaries preserve honest response signals", () => {
 
 test("extractGiftId finds nested gift ids", () => {
   assert.equal(extractGiftId({ foo: { gift: { gift_id: "gift_nested" } } }), "gift_nested");
+});
+
+test("buildProofLedgerView combines sponsor claim and paid action truth", () => {
+  const ledger = buildProofLedgerView({
+    sponsorClaim: {
+      capturedAt: "2026-03-28T12:10:00.000Z",
+      request: {
+        campaignId: "campaign_123",
+        recipientAddress: "0x1111111111111111111111111111111111111111",
+      },
+      summary: {
+        httpStatus: 200,
+        ok: true,
+        txHash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      },
+    },
+    paidAction: {
+      capturedAt: "2026-03-28T12:12:00.000Z",
+      request: {
+        campaignId: "campaign_123",
+        ownerWalletAddress: "0x1111111111111111111111111111111111111111",
+      },
+      summary: {
+        campaign_id: "campaign_123",
+        owner_wallet_address: "0x1111111111111111111111111111111111111111",
+        bounded_job_status: 200,
+        bounded_job_payment_state: "confirmed",
+        bounded_job_tx_hash: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      },
+    },
+    boundedJobLatest: {
+      exists: true,
+      downloadPaths: {
+        summary: "/api/proof/download?kind=bounded-job&file=summary",
+        bundle: "/api/proof/download?kind=bounded-job&file=bundle",
+      },
+    },
+  });
+
+  assert.equal(ledger.campaignId, "campaign_123");
+  assert.equal(ledger.wallet, "0x1111111111111111111111111111111111111111");
+  assert.equal(ledger.sponsorStatus, "confirmed");
+  assert.equal(ledger.paidActionStatus, "confirmed");
+  assert.equal(ledger.entries.length, 2);
+  assert.equal(ledger.downloads.boundedJob.summary, "/api/proof/download?kind=bounded-job&file=summary");
+  assert.equal(ledger.notes.includes("x402 remains blocked / experimental in this shell."), true);
 });

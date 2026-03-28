@@ -142,6 +142,7 @@ export async function runHostedGiftProof(config, options = {}) {
     generated_at: new Date().toISOString(),
     runId: context.runId,
     campaignId: context.campaignId,
+    ownerWalletAddress: config.hosted.giftRecipientAddress || context.ownerWalletAddress,
     ...buildMetadataEnvelope(config),
     ...metadata,
     giftFirst,
@@ -203,6 +204,7 @@ export async function runHostedBoundedJobProof(config, options = {}) {
     generated_at: new Date().toISOString(),
     runId: context.runId,
     campaignId: context.campaignId,
+    ownerWalletAddress: context.ownerWalletAddress,
     ...buildMetadataEnvelope(config),
     ...metadata,
     decision,
@@ -232,6 +234,7 @@ export async function runHostedGiftAndJobProof(config, options = {}) {
     generated_at: new Date().toISOString(),
     runId: context.runId,
     campaignId: context.campaignId,
+    ownerWalletAddress: context.ownerWalletAddress,
     ...buildMetadataEnvelope(config),
     ...metadata,
     giftFirst: giftProof.giftFirst,
@@ -259,14 +262,31 @@ export async function runHostedGiftAndJobProof(config, options = {}) {
 export function summarizeProofBundle(bundle) {
   const hostedProof = bundle.hostedProof ?? bundle;
   const surfaces = Array.isArray(hostedProof?.proof_surfaces) ? hostedProof.proof_surfaces : listProofSurfaces();
+  const session = hostedProof?.sessionStatus?.json?.session ?? null;
   return {
     generated_at: new Date().toISOString(),
+    proof_generated_at: hostedProof?.generated_at ?? bundle.generated_at ?? null,
+    run_id: hostedProof?.runId ?? null,
+    campaign_id: hostedProof?.campaignId ?? bundle.hosted?.campaign_id ?? null,
+    owner_wallet_address:
+      hostedProof?.ownerWalletAddress ??
+      session?.owner_wallet ??
+      bundle.hosted?.owner_wallet_address ??
+      bundle.hosted?.recipient_address ??
+      null,
+    matrica_session_id: session?.session_id ?? bundle.hosted?.matrica_session_id ?? null,
+    identity_key: session?.identity_key ?? null,
+    session_status: session?.status ?? null,
     merchant_id: hostedProof?.merchantId ?? bundle.hosted?.merchant_id ?? null,
     sponsor_gift_status: hostedProof?.giftFirst?.status ?? null,
     sponsor_gift_tx_hash: hostedProof?.txHashes?.sponsorGift ?? null,
     sponsor_gift_reuse_status: hostedProof?.giftReuse?.status ?? null,
     sponsor_gift_duplicate_status: hostedProof?.giftDuplicateBlocked?.status ?? null,
     sponsor_gift_duplicate_blocked: hostedProof?.states?.giftDuplicateBlocked ?? null,
+    bounded_job_decision_status: hostedProof?.decision?.status ?? null,
+    bounded_job_decision_code: hostedProof?.decision?.json?.code ?? null,
+    bounded_job_decision_message: hostedProof?.decision?.json?.message ?? null,
+    bounded_job_reserve_status: hostedProof?.reserve?.status ?? null,
     bounded_job_status: hostedProof?.execute?.status ?? null,
     bounded_job_payment_state: hostedProof?.states?.paymentState ?? null,
     bounded_job_tx_hash: hostedProof?.txHashes?.boundedJob ?? null,

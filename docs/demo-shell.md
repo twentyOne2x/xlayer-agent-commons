@@ -10,8 +10,10 @@ This repo now includes a minimal runnable shell at `apps/demo-shell`.
 4. explicit sponsor-claim initiation using `claimSponsoredGift`
 5. sponsor gift proof run from `src/proof.js`
 6. bounded job proof run from `src/proof.js`
-7. full proof-pack run plus latest bundle export
-8. x402 as explicitly blocked / experimental in the UI
+7. one visible post-claim paid action backed by the bounded-job proof path
+8. a dedicated `/proof` page / activity ledger
+9. full proof-pack run plus latest bundle export
+10. x402 as explicitly blocked / experimental in the UI
 
 ## What it does not claim
 
@@ -42,15 +44,17 @@ The shell now covers the smallest honest journey promised by the spinout spec:
 2. open the hosted authorize URL
 3. poll hosted session status with the returned session id and read token
 4. submit a sponsor claim with explicit wallet, campaign, amount, and idempotency inputs
-5. inspect returned gift receipt fields and tx hash when available
+5. run one bounded-job paid action from the same session and wallet context
+6. inspect the dedicated proof page with sponsor tx hash, paid-action tx hash, wallet, timestamps, and campaign id
 
 State stays lightweight:
 
 1. session id
 2. session read token
 3. sponsor-claim inputs
+4. latest paid-action summary
 
-Those are stored in browser local storage only.
+Those are stored in browser local storage only. The proof page itself reads the current proof artifacts under `tmp/` and the latest shell activity record under `tmp/demo-shell/activity/`.
 
 ## Proof bundles
 

@@ -45,6 +45,25 @@ body {
   padding: 32px 0 48px;
 }
 
+.topnav {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 18px;
+}
+
+.nav-link {
+  min-height: auto;
+  padding: 10px 14px;
+  border-radius: 999px;
+}
+
+.nav-link.current {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff7f0;
+  border-color: transparent;
+}
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -102,7 +121,8 @@ body {
 .status-meta,
 .actions,
 .download-row,
-.grid {
+.grid,
+.summary-grid {
   display: grid;
   gap: 14px;
 }
@@ -224,6 +244,34 @@ button.accent {
 
 .grid {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.summary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.summary-card {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.summary-card h3 {
+  margin: 0 0 8px;
+  font-family: "Iowan Old Style", "Palatino Linotype", serif;
+}
+
+.note-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  display: grid;
+  gap: 8px;
+}
+
+.ledger-row-heading {
+  font-weight: 600;
 }
 
 .bundle-body {

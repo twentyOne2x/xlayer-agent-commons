@@ -9,6 +9,11 @@
   <body>
     <div class="backdrop"></div>
     <main class="shell">
+      <nav class="topnav panel">
+        <a class="nav-link current" href="/">Journey</a>
+        <a class="nav-link" href="/proof">Proof Page</a>
+      </nav>
+
       <section class="hero panel">
         <p class="eyebrow">Runnable Demo Shell</p>
         <h1>XLayer Agent Commons</h1>
@@ -83,6 +88,21 @@
               </div>
             </form>
             <div id="claim-summary" class="result-card empty">No sponsor claim attempted yet.</div>
+          </article>
+
+          <article class="journey-step">
+            <h3>4. Run Your First Paid Action</h3>
+            <p class="hint">
+              This shell keeps the first paid action narrow on purpose: it reuses the existing bounded-job XLayer
+              path with the same campaign and wallet context from your claim flow.
+            </p>
+            <div class="actions single">
+              <button id="run-paid-action" class="accent">Run First Paid Action</button>
+              <a href="/proof">Open Proof Page</a>
+            </div>
+            <div id="paid-action-summary" class="result-card empty">
+              No post-claim paid action has been attempted yet.
+            </div>
           </article>
         </div>
       </section>

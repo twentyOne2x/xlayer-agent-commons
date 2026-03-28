@@ -3,9 +3,11 @@ const storageKey = "xlayer-agent-commons:journey";
 
 const journeyState = {
   defaults: null,
+  paidActionDefaults: null,
   started: null,
   session: null,
   claim: null,
+  paidAction: null,
 };
 
 function formatLabel(kind) {
@@ -52,6 +54,7 @@ function saveStoredJourney() {
     started: journeyState.started,
     session: journeyState.session,
     claim: journeyState.claim,
+    paidAction: journeyState.paidAction,
   };
   window.localStorage.setItem(storageKey, JSON.stringify(payload));
 }
@@ -144,15 +147,52 @@ function renderClaimSummary(payload) {
   target.innerHTML = claimSummaryText(payload.summary);
 }
 
+function paidActionSummaryText(payload) {
+  if (payload?.error?.code) {
+    return `
+      <dl class="facts">
+        <div><dt>Status</dt><dd>failed_closed</dd></div>
+        <div><dt>Code</dt><dd>${escapeHtml(payload.error.code)}</dd></div>
+      </dl>
+    `;
+  }
+
+  const summary = payload?.summary ?? {};
+  return `
+    <dl class="facts">
+      <div><dt>Campaign ID</dt><dd>${escapeHtml(summary.campaign_id ?? payload?.request?.campaignId ?? "n/a")}</dd></div>
+      <div><dt>Wallet</dt><dd class="mono">${escapeHtml(summary.owner_wallet_address ?? payload?.request?.ownerWalletAddress ?? "n/a")}</dd></div>
+      <div><dt>Decision</dt><dd>${escapeHtml(summary.bounded_job_decision_status ?? "n/a")}</dd></div>
+      <div><dt>Bounded Job</dt><dd>${escapeHtml(summary.bounded_job_status ?? "n/a")}</dd></div>
+      <div><dt>Payment State</dt><dd>${escapeHtml(summary.bounded_job_payment_state ?? "n/a")}</dd></div>
+      <div><dt>Decision Message</dt><dd>${escapeHtml(summary.bounded_job_decision_message ?? summary.bounded_job_decision_code ?? "n/a")}</dd></div>
+      <div><dt>Tx Hash</dt><dd class="mono">${escapeHtml(summary.bounded_job_tx_hash ?? "not returned")}</dd></div>
+    </dl>
+  `;
+}
+
+function renderPaidActionSummary(payload) {
+  const target = document.querySelector("#paid-action-summary");
+  if (!payload?.summary && !payload?.error) {
+    target.className = "result-card empty";
+    target.textContent = "No post-claim paid action has been attempted yet.";
+    return;
+  }
+  target.className = "result-card";
+  target.innerHTML = paidActionSummaryText(payload);
+}
+
 function hydrateJourneyForms() {
   const stored = loadStoredJourney();
   journeyState.started = stored.started ?? null;
   journeyState.session = stored.session ?? null;
   journeyState.claim = stored.claim ?? null;
+  journeyState.paidAction = stored.paidAction ?? null;
 
   renderStartSummary(journeyState.started);
   renderSessionSummary(journeyState.session);
   renderClaimSummary(journeyState.claim);
+  renderPaidActionSummary(journeyState.paidAction);
 
   fillForm("#session-form", {
     sessionId:
@@ -239,6 +279,7 @@ function renderBundle(kind, payload) {
 async function refreshStatus() {
   const payload = await readJson("/api/status");
   journeyState.defaults = payload.journeyDefaults ?? null;
+  journeyState.paidActionDefaults = payload.paidActionDefaults ?? null;
   renderStatus(payload.status);
 }
 
@@ -295,6 +336,10 @@ async function refreshSession(event) {
     `/api/matrica/session?sessionId=${encodeURIComponent(sessionId)}&sessionToken=${encodeURIComponent(sessionToken)}`,
   );
   journeyState.session = payload;
+  const recipientField = document.querySelector("#claim-form")?.elements.namedItem("recipientAddress");
+  if (recipientField && !recipientField.value.trim() && payload.summary?.ownerWallet) {
+    recipientField.value = payload.summary.ownerWallet;
+  }
   renderSessionSummary(payload);
   saveStoredJourney();
   return payload;
@@ -321,6 +366,38 @@ async function submitSponsorClaim(event) {
   journeyState.claim = payload;
   renderClaimSummary(payload);
   saveStoredJourney();
+  return payload;
+}
+
+function buildPaidActionRequest() {
+  const sessionForm = document.querySelector("#session-form");
+  const claimForm = document.querySelector("#claim-form");
+  const ownerWalletAddress =
+    journeyState.session?.summary?.ownerWallet ??
+    claimForm.elements.namedItem("recipientAddress").value.trim();
+  return {
+    sessionId: sessionForm.elements.namedItem("sessionId").value.trim(),
+    sessionToken: sessionForm.elements.namedItem("sessionToken").value.trim(),
+    campaignId: claimForm.elements.namedItem("campaignId").value.trim(),
+    recipientAddress: claimForm.elements.namedItem("recipientAddress").value.trim(),
+    ownerWalletAddress,
+    amountUsd: journeyState.paidActionDefaults?.amountUsd ?? 1,
+    jobIdempotencyKey: journeyState.paidActionDefaults?.jobIdempotencyKey ?? "",
+  };
+}
+
+async function runPaidAction() {
+  const request = buildPaidActionRequest();
+  const payload = await readJson("/api/paid-action/run", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  payload.request = request;
+  journeyState.paidAction = payload;
+  renderPaidActionSummary(payload);
+  saveStoredJourney();
+  await refreshBundle("bounded-job");
   return payload;
 }
 
@@ -365,6 +442,26 @@ document.querySelector("#claim-form").addEventListener("submit", (event) => {
     })
     .catch((error) => {
       status.textContent = `Sponsor claim failed closed: ${error instanceof Error ? error.message : String(error)}`;
+    });
+});
+
+document.querySelector("#run-paid-action").addEventListener("click", () => {
+  const status = document.querySelector("#action-status");
+  status.textContent = "Running first paid action...";
+  runPaidAction()
+    .then((payload) => {
+      const txHash = payload.summary?.bounded_job_tx_hash ? ` tx: ${payload.summary.bounded_job_tx_hash}` : "";
+      status.textContent = `Paid action returned ${payload.summary?.bounded_job_status ?? "n/a"}.${txHash}`;
+    })
+    .catch((error) => {
+      journeyState.paidAction = {
+        error: {
+          code: error instanceof Error ? error.message : String(error),
+        },
+      };
+      renderPaidActionSummary(journeyState.paidAction);
+      saveStoredJourney();
+      status.textContent = `Paid action failed closed: ${error instanceof Error ? error.message : String(error)}`;
     });
 });
 
