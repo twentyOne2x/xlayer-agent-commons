@@ -19,6 +19,74 @@
         </p>
       </section>
 
+      <section class="panel journey">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Start Your Agent</p>
+            <h2>Matrica And Sponsor Claim</h2>
+          </div>
+        </div>
+
+        <div class="journey-grid">
+          <article class="journey-step">
+            <h3>1. Start Matrica</h3>
+            <p class="hint">
+              The OAuth callback still lands on the hosted bridge. This shell starts the session, stores the returned
+              session id and read token locally, and then lets you poll the hosted session state.
+            </p>
+            <div class="actions single">
+              <button id="start-agent" class="accent">Start Your Agent</button>
+              <a id="open-matrica" class="disabled-link" href="#" target="_blank" rel="noreferrer">Open Matrica</a>
+            </div>
+            <div id="start-summary" class="result-card empty">No Matrica session started in this browser yet.</div>
+          </article>
+
+          <article class="journey-step">
+            <h3>2. Poll Session Status</h3>
+            <form id="session-form" class="stack-form">
+              <label>
+                <span>Session ID</span>
+                <input id="session-id" name="sessionId" placeholder="matrica_session_..." />
+              </label>
+              <label>
+                <span>Session Read Token</span>
+                <input id="session-token" name="sessionToken" placeholder="optional but recommended" />
+              </label>
+              <div class="actions single">
+                <button id="refresh-session" type="submit">Refresh Session</button>
+              </div>
+            </form>
+            <div id="session-summary" class="result-card empty">No session status loaded yet.</div>
+          </article>
+
+          <article class="journey-step">
+            <h3>3. Claim Sponsor Gift</h3>
+            <form id="claim-form" class="stack-form">
+              <label>
+                <span>Campaign ID</span>
+                <input id="campaign-id" name="campaignId" placeholder="xlayer_hackathon_..." />
+              </label>
+              <label>
+                <span>Recipient Wallet</span>
+                <input id="recipient-address" name="recipientAddress" placeholder="0x..." />
+              </label>
+              <label>
+                <span>Amount USD</span>
+                <input id="amount-usd" name="amountUsd" type="number" min="0.01" step="0.01" />
+              </label>
+              <label>
+                <span>Idempotency Key</span>
+                <input id="idempotency-key" name="idempotencyKey" placeholder="xlayer_claim_..." />
+              </label>
+              <div class="actions single">
+                <button id="claim-sponsor" type="submit">Claim Sponsored Gift</button>
+              </div>
+            </form>
+            <div id="claim-summary" class="result-card empty">No sponsor claim attempted yet.</div>
+          </article>
+        </div>
+      </section>
+
       <section class="panel">
         <div class="section-head">
           <div>

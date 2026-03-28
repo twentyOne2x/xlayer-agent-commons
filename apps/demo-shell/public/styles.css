@@ -181,6 +181,10 @@ th {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+.actions.single {
+  grid-template-columns: 1fr;
+}
+
 button,
 a {
   transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
@@ -263,6 +267,11 @@ a {
   background: rgba(255, 255, 255, 0.76);
 }
 
+a.disabled-link {
+  pointer-events: none;
+  opacity: 0.55;
+}
+
 .hint {
   color: var(--muted);
   line-height: 1.5;
@@ -273,6 +282,62 @@ a {
   font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
   font-size: 0.82rem;
   word-break: break-word;
+}
+
+.journey-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.journey-step {
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.journey-step h3 {
+  margin: 0 0 10px;
+  font-family: "Iowan Old Style", "Palatino Linotype", serif;
+}
+
+.stack-form {
+  display: grid;
+  gap: 12px;
+}
+
+.stack-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.stack-form span {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.stack-form input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(29, 29, 27, 0.16);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink);
+  font: inherit;
+}
+
+.result-card {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.result-card.empty {
+  color: var(--muted);
 }
 
 @keyframes rise {

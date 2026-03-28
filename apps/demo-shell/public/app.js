@@ -1,4 +1,12 @@
 const proofKinds = ["gift", "bounded-job", "full"];
+const storageKey = "xlayer-agent-commons:journey";
+
+const journeyState = {
+  defaults: null,
+  started: null,
+  session: null,
+  claim: null,
+};
 
 function formatLabel(kind) {
   if (kind === "gift") return "Sponsor Gift";
@@ -28,6 +36,142 @@ async function readJson(url, options) {
     throw new Error(message);
   }
   return json;
+}
+
+function loadStoredJourney() {
+  try {
+    const raw = window.localStorage.getItem(storageKey);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveStoredJourney() {
+  const payload = {
+    started: journeyState.started,
+    session: journeyState.session,
+    claim: journeyState.claim,
+  };
+  window.localStorage.setItem(storageKey, JSON.stringify(payload));
+}
+
+function fillForm(id, values) {
+  const form = document.querySelector(id);
+  if (!form) return;
+  for (const [key, value] of Object.entries(values ?? {})) {
+    const field = form.elements.namedItem(key);
+    if (!field) continue;
+    field.value = value ?? "";
+  }
+}
+
+function claimSummaryText(summary) {
+  return `
+    <dl class="facts">
+      <div><dt>HTTP Status</dt><dd>${escapeHtml(summary.httpStatus ?? "n/a")}</dd></div>
+      <div><dt>Receipt Type</dt><dd>${escapeHtml(summary.receiptType ?? "n/a")}</dd></div>
+      <div><dt>Code</dt><dd>${escapeHtml(summary.code ?? "n/a")}</dd></div>
+      <div><dt>Message</dt><dd>${escapeHtml(summary.message ?? "n/a")}</dd></div>
+      <div><dt>Gift ID</dt><dd class="mono">${escapeHtml(summary.giftId ?? "not returned")}</dd></div>
+      <div><dt>Tx Hash</dt><dd class="mono">${escapeHtml(summary.txHash ?? "not returned")}</dd></div>
+    </dl>
+  `;
+}
+
+function sessionSummaryText(summary, sessionJson) {
+  const requestedScopes = Array.isArray(sessionJson?.session?.requested_scopes)
+    ? sessionJson.session.requested_scopes.join(", ")
+    : "n/a";
+  return `
+    <dl class="facts">
+      <div><dt>Status</dt><dd>${escapeHtml(summary.status ?? "n/a")}</dd></div>
+      <div><dt>Agent State</dt><dd>${escapeHtml(summary.agentState ?? "n/a")}</dd></div>
+      <div><dt>Identity Key</dt><dd class="mono">${escapeHtml(summary.identityKey ?? "not available yet")}</dd></div>
+      <div><dt>Owner Wallet</dt><dd class="mono">${escapeHtml(summary.ownerWallet ?? "not available yet")}</dd></div>
+      <div><dt>Callback Completed</dt><dd>${escapeHtml(summary.callbackCompletedAt ?? "not yet")}</dd></div>
+      <div><dt>Requested Scopes</dt><dd>${escapeHtml(requestedScopes)}</dd></div>
+    </dl>
+  `;
+}
+
+function renderStartSummary(payload) {
+  const target = document.querySelector("#start-summary");
+  const openLink = document.querySelector("#open-matrica");
+  if (!payload?.json) {
+    target.className = "result-card empty";
+    target.textContent = "No Matrica session started in this browser yet.";
+    openLink.className = "disabled-link";
+    openLink.removeAttribute("href");
+    return;
+  }
+  const json = payload.json;
+  target.className = "result-card";
+  target.innerHTML = `
+    <dl class="facts">
+      <div><dt>Session ID</dt><dd class="mono">${escapeHtml(json.session_id ?? "n/a")}</dd></div>
+      <div><dt>Read Token</dt><dd class="mono">${escapeHtml(json.session_read_token ?? "n/a")}</dd></div>
+      <div><dt>Status</dt><dd>${escapeHtml(json.status ?? "n/a")}</dd></div>
+      <div><dt>Agent State</dt><dd>${escapeHtml(json.agent_state ?? "n/a")}</dd></div>
+      <div><dt>Expires</dt><dd>${escapeHtml(json.expires_at ?? "n/a")}</dd></div>
+    </dl>
+  `;
+  if (json.authorize_url) {
+    openLink.href = json.authorize_url;
+    openLink.className = "";
+  }
+}
+
+function renderSessionSummary(payload) {
+  const target = document.querySelector("#session-summary");
+  if (!payload?.summary) {
+    target.className = "result-card empty";
+    target.textContent = "No session status loaded yet.";
+    return;
+  }
+  target.className = "result-card";
+  target.innerHTML = sessionSummaryText(payload.summary, payload.json);
+}
+
+function renderClaimSummary(payload) {
+  const target = document.querySelector("#claim-summary");
+  if (!payload?.summary) {
+    target.className = "result-card empty";
+    target.textContent = "No sponsor claim attempted yet.";
+    return;
+  }
+  target.className = "result-card";
+  target.innerHTML = claimSummaryText(payload.summary);
+}
+
+function hydrateJourneyForms() {
+  const stored = loadStoredJourney();
+  journeyState.started = stored.started ?? null;
+  journeyState.session = stored.session ?? null;
+  journeyState.claim = stored.claim ?? null;
+
+  renderStartSummary(journeyState.started);
+  renderSessionSummary(journeyState.session);
+  renderClaimSummary(journeyState.claim);
+
+  fillForm("#session-form", {
+    sessionId:
+      journeyState.session?.summary?.sessionId ??
+      journeyState.started?.json?.session_id ??
+      "",
+    sessionToken:
+      journeyState.session?.json?.session_read_token ??
+      journeyState.started?.json?.session_read_token ??
+      "",
+  });
+
+  fillForm("#claim-form", {
+    campaignId: journeyState.claim?.request?.campaignId ?? journeyState.defaults?.campaignId ?? "",
+    recipientAddress: journeyState.claim?.request?.recipientAddress ?? journeyState.defaults?.recipientAddress ?? "",
+    amountUsd: journeyState.claim?.request?.amountUsd ?? journeyState.defaults?.amountUsd ?? "",
+    idempotencyKey:
+      journeyState.claim?.request?.idempotencyKey ?? journeyState.defaults?.idempotencyKey ?? "",
+  });
 }
 
 function badgeClass(status) {
@@ -94,6 +238,7 @@ function renderBundle(kind, payload) {
 
 async function refreshStatus() {
   const payload = await readJson("/api/status");
+  journeyState.defaults = payload.journeyDefaults ?? null;
   renderStatus(payload.status);
 }
 
@@ -125,11 +270,102 @@ async function runProof(kind) {
   }
 }
 
+async function startAgentJourney() {
+  const payload = await readJson("/api/matrica/start", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  journeyState.started = payload;
+  fillForm("#session-form", {
+    sessionId: payload.json?.session_id ?? "",
+    sessionToken: payload.json?.session_read_token ?? "",
+  });
+  renderStartSummary(payload);
+  saveStoredJourney();
+  return payload;
+}
+
+async function refreshSession(event) {
+  event?.preventDefault();
+  const form = document.querySelector("#session-form");
+  const sessionId = form.elements.namedItem("sessionId").value.trim();
+  const sessionToken = form.elements.namedItem("sessionToken").value.trim();
+  const payload = await readJson(
+    `/api/matrica/session?sessionId=${encodeURIComponent(sessionId)}&sessionToken=${encodeURIComponent(sessionToken)}`,
+  );
+  journeyState.session = payload;
+  renderSessionSummary(payload);
+  saveStoredJourney();
+  return payload;
+}
+
+async function submitSponsorClaim(event) {
+  event?.preventDefault();
+  const sessionForm = document.querySelector("#session-form");
+  const claimForm = document.querySelector("#claim-form");
+  const request = {
+    sessionId: sessionForm.elements.namedItem("sessionId").value.trim(),
+    sessionToken: sessionForm.elements.namedItem("sessionToken").value.trim(),
+    campaignId: claimForm.elements.namedItem("campaignId").value.trim(),
+    recipientAddress: claimForm.elements.namedItem("recipientAddress").value.trim(),
+    amountUsd: claimForm.elements.namedItem("amountUsd").value.trim(),
+    idempotencyKey: claimForm.elements.namedItem("idempotencyKey").value.trim(),
+  };
+  const payload = await readJson("/api/sponsor/claim", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  payload.request = request;
+  journeyState.claim = payload;
+  renderClaimSummary(payload);
+  saveStoredJourney();
+  return payload;
+}
+
 document.querySelector("#refresh-status").addEventListener("click", () => {
   refreshStatus().catch((error) => {
     document.querySelector("#action-status").textContent =
       `Status refresh failed: ${error instanceof Error ? error.message : String(error)}`;
   });
+});
+
+document.querySelector("#start-agent").addEventListener("click", () => {
+  const status = document.querySelector("#action-status");
+  status.textContent = "Starting Matrica session...";
+  startAgentJourney()
+    .then(() => {
+      status.textContent = "Matrica session started. Open Matrica and then refresh the session status.";
+    })
+    .catch((error) => {
+      status.textContent = `Start failed: ${error instanceof Error ? error.message : String(error)}`;
+    });
+});
+
+document.querySelector("#session-form").addEventListener("submit", (event) => {
+  const status = document.querySelector("#action-status");
+  status.textContent = "Refreshing Matrica session...";
+  refreshSession(event)
+    .then(() => {
+      status.textContent = "Session refreshed.";
+    })
+    .catch((error) => {
+      status.textContent = `Session refresh failed: ${error instanceof Error ? error.message : String(error)}`;
+    });
+});
+
+document.querySelector("#claim-form").addEventListener("submit", (event) => {
+  const status = document.querySelector("#action-status");
+  status.textContent = "Submitting sponsor claim...";
+  submitSponsorClaim(event)
+    .then((payload) => {
+      const txHash = payload.summary?.txHash ? ` tx: ${payload.summary.txHash}` : "";
+      status.textContent = `Sponsor claim returned HTTP ${payload.summary?.httpStatus ?? "n/a"}.${txHash}`;
+    })
+    .catch((error) => {
+      status.textContent = `Sponsor claim failed closed: ${error instanceof Error ? error.message : String(error)}`;
+    });
 });
 
 for (const button of document.querySelectorAll("[data-kind]")) {
@@ -142,4 +378,5 @@ for (const button of document.querySelectorAll("[data-kind]")) {
 }
 
 await refreshStatus();
+hydrateJourneyForms();
 await Promise.all(proofKinds.map((kind) => refreshBundle(kind)));

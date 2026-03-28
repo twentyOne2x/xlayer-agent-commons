@@ -8,10 +8,14 @@ import {
   DEMO_PROOF_KINDS,
   demoShellPort,
   featureStatusSnapshot,
+  fetchJourneySession,
   normalizeProofKind,
   persistProofKind,
   proofOutputDir,
   readLatestProofKind,
+  runSponsorClaim,
+  sponsorClaimDefaults,
+  startJourneySession,
 } from "./lib.js";
 
 const publicDir = resolve(process.cwd(), "apps/demo-shell/public");
@@ -42,6 +46,19 @@ function sendText(res, statusCode, text) {
     "cache-control": "no-store",
   });
   res.end(text);
+}
+
+async function readRequestJson(req) {
+  let raw = "";
+  for await (const chunk of req) {
+    raw += chunk.toString();
+  }
+  if (!raw.trim()) return {};
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error("invalid_json_body");
+  }
 }
 
 async function sendStatic(res, filePath) {
@@ -104,7 +121,71 @@ async function handleApi(req, res, url) {
       shell: "xlayer-agent-commons-demo-shell",
       proofKinds: DEMO_PROOF_KINDS,
       status: featureStatusSnapshot(config),
+      journeyDefaults: sponsorClaimDefaults(config),
     });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/matrica/start") {
+    try {
+      const body = await readRequestJson(req);
+      const result = await startJourneySession(currentConfig(), {
+        returnTo: typeof body.returnTo === "string" ? body.returnTo : undefined,
+      });
+      sendJson(res, 200, {
+        ok: true,
+        ...result,
+      });
+    } catch (error) {
+      sendJson(res, 500, {
+        ok: false,
+        error: {
+          code: error instanceof Error ? error.message : String(error),
+        },
+      });
+    }
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/matrica/session") {
+    try {
+      const sessionId = url.searchParams.get("sessionId") ?? "";
+      const sessionToken = url.searchParams.get("sessionToken") ?? "";
+      const result = await fetchJourneySession(currentConfig(), {
+        sessionId,
+        sessionToken,
+      });
+      sendJson(res, 200, {
+        ok: true,
+        ...result,
+      });
+    } catch (error) {
+      sendJson(res, 500, {
+        ok: false,
+        error: {
+          code: error instanceof Error ? error.message : String(error),
+        },
+      });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/sponsor/claim") {
+    try {
+      const body = await readRequestJson(req);
+      const result = await runSponsorClaim(currentConfig(), body);
+      sendJson(res, 200, {
+        ok: true,
+        ...result,
+      });
+    } catch (error) {
+      sendJson(res, 500, {
+        ok: false,
+        error: {
+          code: error instanceof Error ? error.message : String(error),
+        },
+      });
+    }
     return;
   }
 
