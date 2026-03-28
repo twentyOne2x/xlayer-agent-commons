@@ -3,12 +3,20 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "app:start": "node ./apps/demo-shell/server.js",
     "demo:matrica": "node ./scripts/demo.js matrica-start",
     "demo:gift": "node ./scripts/demo.js gift",
+    "demo:proof": "node ./scripts/demo.js proof",
+    "demo:seed": "tsx ./scripts/demo-seed.ts",
     "demo:wallet": "node ./scripts/demo.js wallet-status",
+    "demo:wallet-addresses": "node ./scripts/demo.js wallet-addresses",
     "demo:x402": "node ./scripts/demo.js x402",
     "demo:full": "node ./scripts/demo.js full",
+    "proof-pack:import-live": "tsx ./scripts/import-live-proof.ts",
+    "proof-pack:export": "tsx ./scripts/export-proof-pack.ts",
     "test": "node --test ./test/*.test.js"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6"
   }
 }
-

@@ -59,7 +59,7 @@ export function buildX402PayArgs(option, overrides = {}) {
   if (!network || !amount || !payTo || !asset) {
     throw new Error("x402_option_incomplete");
   }
-  return [
+  const args = [
     "payment",
     "x402-pay",
     "--network",
@@ -70,9 +70,15 @@ export function buildX402PayArgs(option, overrides = {}) {
     String(payTo),
     "--asset",
     String(asset),
-    "--max-timeout-seconds",
-    timeoutSeconds,
   ];
+  if (overrides.from) {
+    args.push("--from", String(overrides.from));
+  }
+  args.push("--max-timeout-seconds", timeoutSeconds);
+  if (overrides.chain) {
+    args.push("--chain", String(overrides.chain));
+  }
+  return args;
 }
 
 function extractSignedPayment(payload) {
@@ -119,6 +125,8 @@ export async function payProtectedResource(args) {
   const option = pickX402Option(challenge);
   const payArgs = buildX402PayArgs(option, {
     network: args.network || undefined,
+    chain: args.chain || undefined,
+    from: args.from || undefined,
     defaultMaxTimeoutSeconds: args.maxTimeoutSeconds,
   });
   const signedResult = await runOnchainOs(payArgs, {
@@ -147,4 +155,3 @@ export async function payProtectedResource(args) {
     replay: await summarizeResponse(replayResponse),
   };
 }
-

@@ -1,6 +1,14 @@
 import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
+
+export const DEFAULT_XLAYER_MAINNET_RPC_URL = "https://rpc.xlayer.tech";
+export const DEFAULT_XLAYER_CHAIN_ID = 196;
+export const DEFAULT_XLAYER_USDC = "0x74b7F16337b8972027F6196A17a631aC6dE26d22";
+export const DEFAULT_HOSTED_BASE_URL = "https://credit.attn.markets";
+export const DEFAULT_GIFT_AMOUNT_USD = 5;
+export const DEFAULT_JOB_AMOUNT_USD = 1;
+export const DEFAULT_XLAYER_MERCHANT_ID = "xlayer_onchainos_job";
 
 export function parseDotEnv(text) {
   const values = {};
@@ -19,16 +27,14 @@ export function parseDotEnv(text) {
   return values;
 }
 
-export function loadEnvFile(envPath = ".env") {
-  const absolutePath = resolve(envPath);
-  if (!existsSync(absolutePath)) return { loaded: false, path: absolutePath };
-  const parsed = parseDotEnv(readFileSync(absolutePath, "utf8"));
-  for (const [key, value] of Object.entries(parsed)) {
-    if (!process.env[key]) {
-      process.env[key] = value;
+function firstString(env, keys, fallback = "") {
+  for (const key of keys) {
+    const value = env[key];
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value.trim();
     }
   }
-  return { loaded: true, path: absolutePath };
+  return fallback;
 }
 
 function readNumber(value, fallback) {
@@ -45,8 +51,8 @@ function readJson(value, fallback) {
   }
 }
 
-function defaultIdempotencyKey() {
-  return `xlayer_agent_commons_${new Date().toISOString().replace(/[:.]/g, "-")}`;
+function defaultIdempotencyKey(prefix) {
+  return `${prefix}_${new Date().toISOString().replace(/[:.]/g, "-")}`;
 }
 
 function defaultOnchainOsBin() {
@@ -54,26 +60,170 @@ function defaultOnchainOsBin() {
   return existsSync(installedPath) ? installedPath : "onchainos";
 }
 
-export function resolveSpinoutConfig(env = process.env) {
+export function defaultSharedEnvPath(env = process.env) {
+  return firstString(
+    env,
+    ["XLAYER_AGENT_COMMONS_SHARED_ENV_PATH", "ATTN_SHARED_ENV_PATH"],
+    join(os.homedir(), ".config", "attn", "shared.env"),
+  );
+}
+
+export function loadEnvFile(envPath = ".env", options = {}) {
+  const env = options.env ?? process.env;
+  const absolutePath = resolve(envPath);
+  if (!existsSync(absolutePath)) return { loaded: false, path: absolutePath };
+  const parsed = parseDotEnv(readFileSync(absolutePath, "utf8"));
+  for (const [key, value] of Object.entries(parsed)) {
+    if (!options.override && env[key]) continue;
+    env[key] = value;
+  }
+  return { loaded: true, path: absolutePath };
+}
+
+export function loadEnvFiles(options = {}) {
+  const env = options.env ?? process.env;
+  const shared = loadEnvFile(options.sharedEnvPath ?? defaultSharedEnvPath(env), {
+    env,
+    override: false,
+  });
+  const local = loadEnvFile(options.localEnvPath ?? ".env", {
+    env,
+    override: true,
+  });
+  return { shared, local };
+}
+
+export function resolveXLayerAgentCommonsConfig(env = process.env) {
+  const giftRecipientAddress = firstString(
+    env,
+    [
+      "XLAYER_AGENT_COMMONS_GIFT_RECIPIENT_ADDRESS",
+      "ATTN_XLAYER_RECIPIENT_ADDRESS",
+      "XLAYER_PROBE_GIFT_RECIPIENT_ADDRESS",
+    ],
+    "",
+  );
+  const ownerWalletAddress = firstString(
+    env,
+    [
+      "XLAYER_AGENT_COMMONS_OWNER_WALLET_ADDRESS",
+      "XLAYER_PROBE_OWNER_WALLET_ADDRESS",
+      "XLAYER_PROBE_GIFT_RECIPIENT_ADDRESS",
+    ],
+    giftRecipientAddress,
+  );
+
   return {
-    attn: {
-      baseUrl: env.ATTN_CREDIT_BASE_URL?.trim() || "https://credit.attn.markets",
-      matricaReturnTo: env.ATTN_MATRICA_RETURN_TO?.trim() || "/matrica/connect/success",
-      matricaSessionId: env.ATTN_MATRICA_SESSION_ID?.trim() || "",
-      matricaSessionToken: env.ATTN_MATRICA_SESSION_TOKEN?.trim() || "",
-      xlayerRecipientAddress: env.ATTN_XLAYER_RECIPIENT_ADDRESS?.trim() || "",
-      xlayerGiftAmountUsd: readNumber(env.ATTN_XLAYER_GIFT_AMOUNT_USD, 5),
-      xlayerCampaignId: env.ATTN_XLAYER_CAMPAIGN_ID?.trim() || "",
-      xlayerIdempotencyKey: env.ATTN_XLAYER_IDEMPOTENCY_KEY?.trim() || defaultIdempotencyKey(),
+    sharedEnvPath: defaultSharedEnvPath(env),
+    hosted: {
+      baseUrl: firstString(
+        env,
+        [
+          "XLAYER_AGENT_COMMONS_HOSTED_BASE_URL",
+          "ATTN_CREDIT_BASE_URL",
+          "XLAYER_PROBE_HOSTED_BASE_URL",
+        ],
+        DEFAULT_HOSTED_BASE_URL,
+      ),
+      matricaReturnTo: firstString(
+        env,
+        ["XLAYER_AGENT_COMMONS_MATRICA_RETURN_TO", "ATTN_MATRICA_RETURN_TO"],
+        "/matrica/connect/success",
+      ),
+      matricaSessionId: firstString(
+        env,
+        ["XLAYER_AGENT_COMMONS_MATRICA_SESSION_ID", "ATTN_MATRICA_SESSION_ID", "XLAYER_PROBE_MATRICA_SESSION_ID"],
+        "",
+      ),
+      matricaSessionToken: firstString(
+        env,
+        ["XLAYER_AGENT_COMMONS_MATRICA_SESSION_TOKEN", "ATTN_MATRICA_SESSION_TOKEN"],
+        "",
+      ),
+      campaignId: firstString(
+        env,
+        ["XLAYER_AGENT_COMMONS_CAMPAIGN_ID", "ATTN_XLAYER_CAMPAIGN_ID"],
+        "",
+      ),
+      giftRecipientAddress,
+      ownerWalletAddress,
+      giftAmountUsd: readNumber(
+        firstString(
+          env,
+          ["XLAYER_AGENT_COMMONS_GIFT_AMOUNT_USD", "ATTN_XLAYER_GIFT_AMOUNT_USD", "XLAYER_PROBE_GIFT_AMOUNT_USD"],
+          "",
+        ),
+        DEFAULT_GIFT_AMOUNT_USD,
+      ),
+      jobAmountUsd: readNumber(
+        firstString(env, ["XLAYER_AGENT_COMMONS_JOB_AMOUNT_USD", "XLAYER_PROBE_JOB_AMOUNT_USD"], ""),
+        DEFAULT_JOB_AMOUNT_USD,
+      ),
+      merchantId: firstString(
+        env,
+        ["XLAYER_AGENT_COMMONS_MERCHANT_ID", "XLAYER_PROBE_MERCHANT_ID"],
+        DEFAULT_XLAYER_MERCHANT_ID,
+      ),
+      giftIdempotencyKey: firstString(
+        env,
+        ["XLAYER_AGENT_COMMONS_GIFT_IDEMPOTENCY_KEY", "ATTN_XLAYER_IDEMPOTENCY_KEY"],
+        defaultIdempotencyKey("xlayer_gift"),
+      ),
+      jobIdempotencyKey: firstString(
+        env,
+        ["XLAYER_AGENT_COMMONS_JOB_IDEMPOTENCY_KEY"],
+        defaultIdempotencyKey("xlayer_job"),
+      ),
+      operatorToken: firstString(
+        env,
+        ["XLAYER_AGENT_COMMONS_OPERATOR_TOKEN", "ATTN_OPERATOR_TOKEN", "ATTN_PARTNER_CREDIT_OPERATOR_TOKEN"],
+        "",
+      ),
+      operatorAuthHeader: firstString(env, ["XLAYER_AGENT_COMMONS_OPERATOR_AUTH_HEADER"], "authorization"),
+      operatorAuthPrefix: firstString(env, ["XLAYER_AGENT_COMMONS_OPERATOR_AUTH_PREFIX"], "Bearer"),
+    },
+    xlayer: {
+      rpcUrl: firstString(
+        env,
+        ["XLAYER_AGENT_COMMONS_RPC_URL", "TEMPO_AGENT_CREDIT_XLAYER_RPC_URL"],
+        DEFAULT_XLAYER_MAINNET_RPC_URL,
+      ),
+      chainId: readNumber(
+        firstString(env, ["XLAYER_AGENT_COMMONS_CHAIN_ID", "TEMPO_AGENT_CREDIT_XLAYER_CHAIN_ID"], ""),
+        DEFAULT_XLAYER_CHAIN_ID,
+      ),
+      paymentToken: firstString(
+        env,
+        ["XLAYER_AGENT_COMMONS_PAYMENT_TOKEN", "TEMPO_AGENT_CREDIT_XLAYER_PAYMENT_TOKEN"],
+        DEFAULT_XLAYER_USDC,
+      ),
     },
     okx: {
-      onchainosBin: env.OKX_ONCHAINOS_BIN?.trim() || defaultOnchainOsBin(),
-      x402Url: env.OKX_X402_URL?.trim() || "",
-      x402Method: (env.OKX_X402_METHOD?.trim() || "GET").toUpperCase(),
-      x402RequestHeaders: readJson(env.OKX_X402_REQUEST_HEADERS_JSON, {}),
-      x402RequestBody: env.OKX_X402_REQUEST_BODY_JSON?.trim() || "",
-      x402Network: env.OKX_X402_NETWORK?.trim() || "",
-      x402MaxTimeoutSeconds: readNumber(env.OKX_X402_MAX_TIMEOUT_SECONDS, 300),
+      onchainosBin: firstString(env, ["OKX_ONCHAINOS_BIN"], defaultOnchainOsBin()),
+      x402Url: firstString(env, ["XLAYER_AGENT_COMMONS_X402_URL", "OKX_X402_URL"], ""),
+      x402Method: firstString(env, ["XLAYER_AGENT_COMMONS_X402_METHOD", "OKX_X402_METHOD"], "GET").toUpperCase(),
+      x402RequestHeaders: readJson(
+        firstString(
+          env,
+          ["XLAYER_AGENT_COMMONS_X402_REQUEST_HEADERS_JSON", "OKX_X402_REQUEST_HEADERS_JSON"],
+          "",
+        ),
+        {},
+      ),
+      x402RequestBody: firstString(
+        env,
+        ["XLAYER_AGENT_COMMONS_X402_REQUEST_BODY_JSON", "OKX_X402_REQUEST_BODY_JSON"],
+        "",
+      ),
+      x402MaxTimeoutSeconds: readNumber(
+        firstString(
+          env,
+          ["XLAYER_AGENT_COMMONS_X402_MAX_TIMEOUT_SECONDS", "OKX_X402_MAX_TIMEOUT_SECONDS"],
+          "",
+        ),
+        300,
+      ),
+      x402Network: firstString(env, ["XLAYER_AGENT_COMMONS_X402_NETWORK", "OKX_X402_NETWORK"], ""),
     },
     okxCredentials: {
       hasApiKey: Boolean(env.OKX_API_KEY),
@@ -81,7 +231,11 @@ export function resolveSpinoutConfig(env = process.env) {
       hasPassphrase: Boolean(env.OKX_PASSPHRASE),
     },
     proof: {
-      outputDir: resolve(env.PROOF_OUTPUT_DIR?.trim() || "./tmp"),
+      outputDir: resolve(
+        firstString(env, ["XLAYER_AGENT_COMMONS_PROOF_OUTPUT_DIR", "PROOF_OUTPUT_DIR"], "./tmp"),
+      ),
     },
   };
 }
+
+export const resolveSpinoutConfig = resolveXLayerAgentCommonsConfig;

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>XLayer Agent Commons Demo Shell</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <main class="shell">
+      <nav class="topnav panel">
+        <a class="nav-link current" href="/">Journey</a>
+        <a class="nav-link" href="/proof">Proof Page</a>
+      </nav>
+
+      <section class="hero panel">
+        <p class="eyebrow">Runnable Demo Shell</p>
+        <h1>XLayer Agent Commons</h1>
+        <p class="lede">
+          A lightweight standalone shell for the lifted XLayer proof modules. It shows the current feature
+          posture, walks a Matrica-gated sponsor-claim to swap journey, and exports the latest proof bundles
+          without pretending blocked lanes are live.
+        </p>
+      </section>
+
+      <section class="panel journey">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Start Your Agent</p>
+            <h2>Matrica And Sponsor Claim</h2>
+          </div>
+        </div>
+
+        <div class="journey-grid">
+          <article class="journey-step">
+            <h3>1. Start Matrica</h3>
+            <p class="hint">
+              The OAuth callback still lands on the hosted bridge. This shell starts the session, stores the returned
+              session id and read token locally, and then lets you poll the hosted session state.
+            </p>
+            <div class="actions single">
+              <button id="start-agent" class="accent">Start Your Agent</button>
+              <a id="open-matrica" class="disabled-link" href="#" target="_blank" rel="noreferrer">Open Matrica</a>
+            </div>
+            <div id="start-summary" class="result-card empty">No Matrica session started in this browser yet.</div>
+          </article>
+
+          <article class="journey-step">
+            <h3>2. Poll Session Status</h3>
+            <form id="session-form" class="stack-form">
+              <label>
+                <span>Session ID</span>
+                <input id="session-id" name="sessionId" placeholder="matrica_session_..." />
+              </label>
+              <label>
+                <span>Session Read Token</span>
+                <input id="session-token" name="sessionToken" placeholder="optional but recommended" />
+              </label>
+              <div class="actions single">
+                <button id="refresh-session" type="submit">Refresh Session</button>
+              </div>
+            </form>
+            <div id="session-summary" class="result-card empty">No session status loaded yet.</div>
+          </article>
+
+          <article class="journey-step">
+            <h3>3. Claim Sponsor Gift</h3>
+            <form id="claim-form" class="stack-form">
+              <label>
+                <span>Campaign ID</span>
+                <input id="campaign-id" name="campaignId" placeholder="xlayer_hackathon_..." />
+              </label>
+              <label>
+                <span>Recipient Wallet</span>
+                <input id="recipient-address" name="recipientAddress" placeholder="0x..." />
+              </label>
+              <label>
+                <span>Amount USD</span>
+                <input id="amount-usd" name="amountUsd" type="number" min="0.01" step="0.01" />
+              </label>
+              <label>
+                <span>Idempotency Key</span>
+                <input id="idempotency-key" name="idempotencyKey" placeholder="xlayer_claim_..." />
+              </label>
+              <div class="actions single">
+                <button id="claim-sponsor" type="submit">Claim Sponsored Gift</button>
+              </div>
+            </form>
+            <div id="claim-summary" class="result-card empty">No sponsor claim attempted yet.</div>
+          </article>
+
+          <article class="journey-step">
+            <h3>4. Run Your First Swap</h3>
+            <p class="hint">
+              This is the first-class post-claim XLayer path in the standalone shell. It reuses the existing
+              hosted decision, reserve, and execute rail while keeping the lifted swap merchant and inputs explicit.
+            </p>
+            <form id="swap-form" class="stack-form">
+              <label>
+                <span>Pair Key</span>
+                <input id="swap-pair-key" name="pairKey" placeholder="usdc/wokb" />
+              </label>
+              <label>
+                <span>From Token</span>
+                <input id="swap-input-token" name="inputTokenAddress" placeholder="0x..." />
+              </label>
+              <label>
+                <span>To Token</span>
+                <input id="swap-output-token" name="outputTokenAddress" placeholder="0x..." />
+              </label>
+              <label>
+                <span>Exact Input Amount</span>
+                <input id="swap-exact-input" name="exactInputAmount" placeholder="5000000" />
+              </label>
+              <label>
+                <span>Minimum Output Amount</span>
+                <input id="swap-min-output" name="minOutputAmount" placeholder="4900000" />
+              </label>
+              <label>
+                <span>Slippage Bps</span>
+                <input id="swap-slippage" name="maxSlippageBps" type="number" min="1" step="1" />
+              </label>
+              <label>
+                <span>Swap Idempotency Key</span>
+                <input id="swap-idempotency-key" name="jobIdempotencyKey" placeholder="xlayer_swap_..." />
+              </label>
+              <div class="actions single">
+                <button id="run-swap" type="button" class="accent">Run First Swap</button>
+                <a href="/proof">Open Proof Page</a>
+              </div>
+            </form>
+            <div id="swap-summary" class="result-card empty">No post-claim swap has been attempted yet.</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Feature Status Matrix</p>
+            <h2>Current Truth</h2>
+          </div>
+          <button id="refresh-status" class="secondary">Refresh</button>
+        </div>
+        <div id="status-meta" class="status-meta"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Surface</th>
+                <th>Status</th>
+                <th>Note</th>
+              </tr>
+            </thead>
+            <tbody id="status-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Proof Runs</p>
+            <h2>Run The Honest Paths</h2>
+          </div>
+        </div>
+        <div class="actions">
+          <button data-kind="gift">Run Sponsor Gift Proof</button>
+          <button data-kind="bounded-job">Run Bounded Job Proof</button>
+          <button data-kind="full" class="accent">Run Full Proof Pack</button>
+        </div>
+        <p id="action-status" class="hint">
+          These actions use the existing lifted proof modules. Swap is first-class in the journey above. x402 stays
+          blocked, and missing session or wallet values fail closed with structured errors.
+        </p>
+      </section>
+
+      <section class="panel blocked">
+        <p class="eyebrow">Experimental Surface</p>
+        <h2>x402 Stays Blocked Here</h2>
+        <p>
+          The x402 client code is present in the repo, but this shell intentionally does not expose a live x402
+          action button. Current honest status remains blocked until a real XLayer payment proof exists.
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="panel">
+          <div class="section-head compact">
+            <div>
+              <p class="eyebrow">Latest Bundle</p>
+              <h2>Swap</h2>
+            </div>
+            <span id="swap-pill" class="pill">waiting</span>
+          </div>
+          <div id="swap-body" class="bundle-body"></div>
+        </article>
+
+        <article class="panel">
+          <div class="section-head compact">
+            <div>
+              <p class="eyebrow">Latest Bundle</p>
+              <h2>Sponsor Gift</h2>
+            </div>
+            <span id="gift-pill" class="pill">waiting</span>
+          </div>
+          <div id="gift-body" class="bundle-body"></div>
+        </article>
+
+        <article class="panel">
+          <div class="section-head compact">
+            <div>
+              <p class="eyebrow">Latest Bundle</p>
+              <h2>Bounded Job</h2>
+            </div>
+            <span id="bounded-job-pill" class="pill">waiting</span>
+          </div>
+          <div id="bounded-job-body" class="bundle-body"></div>
+        </article>
+
+        <article class="panel">
+          <div class="section-head compact">
+            <div>
+              <p class="eyebrow">Latest Bundle</p>
+              <h2>Full Proof Pack</h2>
+            </div>
+            <span id="full-pill" class="pill">waiting</span>
+          </div>
+          <div id="full-body" class="bundle-body"></div>
+        </article>
+      </section>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
