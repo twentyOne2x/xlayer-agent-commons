@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "app:start": "node ./apps/demo-shell/server.js",
     "demo:matrica": "node ./scripts/demo.js matrica-start",
     "demo:gift": "node ./scripts/demo.js gift",
     "demo:proof": "node ./scripts/demo.js proof",

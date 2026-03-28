@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>XLayer Agent Commons Demo Shell</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <main class="shell">
+      <section class="hero panel">
+        <p class="eyebrow">Runnable Demo Shell</p>
+        <h1>XLayer Agent Commons</h1>
+        <p class="lede">
+          A lightweight standalone shell for the lifted XLayer proof modules. It shows the current feature
+          posture, runs sponsor-gift and bounded-job proofs, and exports the latest proof bundles without
+          pretending blocked lanes are live.
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Feature Status Matrix</p>
+            <h2>Current Truth</h2>
+          </div>
+          <button id="refresh-status" class="secondary">Refresh</button>
+        </div>
+        <div id="status-meta" class="status-meta"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Surface</th>
+                <th>Status</th>
+                <th>Note</th>
+              </tr>
+            </thead>
+            <tbody id="status-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Proof Runs</p>
+            <h2>Run The Honest Paths</h2>
+          </div>
+        </div>
+        <div class="actions">
+          <button data-kind="gift">Run Sponsor Gift Proof</button>
+          <button data-kind="bounded-job">Run Bounded Job Proof</button>
+          <button data-kind="full" class="accent">Run Full Proof Pack</button>
+        </div>
+        <p id="action-status" class="hint">
+          These actions use the existing lifted proof modules. Missing session or wallet env values fail closed and
+          return structured errors.
+        </p>
+      </section>
+
+      <section class="panel blocked">
+        <p class="eyebrow">Experimental Surface</p>
+        <h2>x402 Stays Blocked Here</h2>
+        <p>
+          The x402 client code is present in the repo, but this shell intentionally does not expose a live x402
+          action button. Current honest status remains blocked until a real XLayer payment proof exists.
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="panel">
+          <div class="section-head compact">
+            <div>
+              <p class="eyebrow">Latest Bundle</p>
+              <h2>Sponsor Gift</h2>
+            </div>
+            <span id="gift-pill" class="pill">waiting</span>
+          </div>
+          <div id="gift-body" class="bundle-body"></div>
+        </article>
+
+        <article class="panel">
+          <div class="section-head compact">
+            <div>
+              <p class="eyebrow">Latest Bundle</p>
+              <h2>Bounded Job</h2>
+            </div>
+            <span id="bounded-job-pill" class="pill">waiting</span>
+          </div>
+          <div id="bounded-job-body" class="bundle-body"></div>
+        </article>
+
+        <article class="panel">
+          <div class="section-head compact">
+            <div>
+              <p class="eyebrow">Latest Bundle</p>
+              <h2>Full Proof Pack</h2>
+            </div>
+            <span id="full-pill" class="pill">waiting</span>
+          </div>
+          <div id="full-body" class="bundle-body"></div>
+        </article>
+      </section>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

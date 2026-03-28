@@ -33,6 +33,60 @@ async function writeJson(path, value) {
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
+function buildMetadataEnvelope(config) {
+  return {
+    proof_surfaces: listProofSurfaces(),
+    merchantId: config.hosted.merchantId,
+  };
+}
+
+function assertMatricaSession(config) {
+  if (!config?.hosted?.matricaSessionId) {
+    throw new Error("matrica_session_id_required");
+  }
+}
+
+function assertGiftRecipient(config) {
+  if (!config?.hosted?.giftRecipientAddress) {
+    throw new Error("gift_recipient_address_required");
+  }
+}
+
+function assertOwnerWallet(config) {
+  const ownerWalletAddress = config?.hosted?.ownerWalletAddress || config?.hosted?.giftRecipientAddress;
+  if (!ownerWalletAddress) {
+    throw new Error("owner_wallet_address_required");
+  }
+  return ownerWalletAddress;
+}
+
+export function buildHostedProofContext(config, options = {}) {
+  assertMatricaSession(config);
+  const runId = options.runId || buildRunId();
+  return {
+    runId,
+    campaignId: options.campaignId || buildCampaignId(runId, config.hosted.campaignId),
+    giftIdempotencyKey: options.giftIdempotencyKey || config.hosted.giftIdempotencyKey || `xlayer_gift_${runId}`,
+    jobIdempotencyKey: options.jobIdempotencyKey || config.hosted.jobIdempotencyKey || `xlayer_job_${runId}`,
+    ownerWalletAddress: options.ownerWalletAddress || assertOwnerWallet(config),
+  };
+}
+
+export async function loadHostedProofMetadata(config) {
+  assertMatricaSession(config);
+  const [sessionStatus, capabilities] = await Promise.all([
+    fetchMatricaSession({
+      baseUrl: config.hosted.baseUrl,
+      sessionId: config.hosted.matricaSessionId,
+      sessionToken: config.hosted.matricaSessionToken,
+    }),
+    fetchHostedCapabilities({
+      baseUrl: config.hosted.baseUrl,
+    }),
+  ]);
+  return { sessionStatus, capabilities };
+}
+
 export function extractFacilityId(value) {
   return extractString(asRecord(value)?.facility, "facility_id");
 }
@@ -58,38 +112,21 @@ export function extractPaymentTxHash(value) {
   );
 }
 
-export async function runHostedGiftAndJobProof(config) {
-  if (!config.hosted.matricaSessionId) {
-    throw new Error("matrica_session_id_required");
-  }
-  if (!config.hosted.giftRecipientAddress) {
-    throw new Error("gift_recipient_address_required");
-  }
-
-  const runId = buildRunId();
-  const campaignId = buildCampaignId(runId, config.hosted.campaignId);
-  const giftIdempotencyKey = config.hosted.giftIdempotencyKey || `xlayer_gift_${runId}`;
-  const jobIdempotencyKey = config.hosted.jobIdempotencyKey || `xlayer_job_${runId}`;
-  const ownerWalletAddress = config.hosted.ownerWalletAddress || config.hosted.giftRecipientAddress;
-
-  const sessionStatus = await fetchMatricaSession({
-    baseUrl: config.hosted.baseUrl,
-    sessionId: config.hosted.matricaSessionId,
-    sessionToken: config.hosted.matricaSessionToken,
-  });
-  const capabilities = await fetchHostedCapabilities({
-    baseUrl: config.hosted.baseUrl,
-  });
+export async function runHostedGiftProof(config, options = {}) {
+  assertMatricaSession(config);
+  assertGiftRecipient(config);
+  const context = options.context ?? buildHostedProofContext(config, options);
+  const metadata = options.metadata ?? (await loadHostedProofMetadata(config));
 
   const giftArgs = {
     baseUrl: config.hosted.baseUrl,
-    campaignId,
+    campaignId: context.campaignId,
     matricaSessionId: config.hosted.matricaSessionId,
     recipientAddress: config.hosted.giftRecipientAddress,
-    idempotencyKey: giftIdempotencyKey,
+    idempotencyKey: context.giftIdempotencyKey,
     amountUsd: config.hosted.giftAmountUsd,
     artifactJson: {
-      proof_run: runId,
+      proof_run: context.runId,
       source: "xlayer-agent-commons",
     },
   };
@@ -98,8 +135,31 @@ export async function runHostedGiftAndJobProof(config) {
   const giftReuse = await claimSponsoredGift(giftArgs);
   const giftDuplicateBlocked = await claimSponsoredGift({
     ...giftArgs,
-    idempotencyKey: `${giftIdempotencyKey}_duplicate`,
+    idempotencyKey: `${context.giftIdempotencyKey}_duplicate`,
   });
+
+  return {
+    generated_at: new Date().toISOString(),
+    runId: context.runId,
+    campaignId: context.campaignId,
+    ...buildMetadataEnvelope(config),
+    ...metadata,
+    giftFirst,
+    giftReuse,
+    giftDuplicateBlocked,
+    states: {
+      giftDuplicateBlocked: Boolean(giftDuplicateBlocked && giftDuplicateBlocked.status >= 400),
+    },
+    txHashes: {
+      sponsorGift: pickTxHash(giftFirst.json),
+    },
+  };
+}
+
+export async function runHostedBoundedJobProof(config, options = {}) {
+  assertMatricaSession(config);
+  const context = options.context ?? buildHostedProofContext(config, options);
+  const metadata = options.metadata ?? (await loadHostedProofMetadata(config));
 
   const decision = await requestBoundedJobDecision({
     baseUrl: config.hosted.baseUrl,
@@ -121,10 +181,10 @@ export async function runHostedGiftAndJobProof(config) {
           endpointPath: "/jobs",
           requestBodyJson: buildHostedJobRequestBody({
             merchantId: config.hosted.merchantId,
-            runId,
-            ownerWallet: ownerWalletAddress,
+            runId: context.runId,
+            ownerWallet: context.ownerWalletAddress,
           }),
-          idempotencyKey: jobIdempotencyKey,
+          idempotencyKey: context.jobIdempotencyKey,
           now: new Date().toISOString(),
         })
       : null;
@@ -141,15 +201,10 @@ export async function runHostedGiftAndJobProof(config) {
 
   return {
     generated_at: new Date().toISOString(),
-    runId,
-    campaignId,
-    merchantId: config.hosted.merchantId,
-    proof_surfaces: listProofSurfaces(),
-    sessionStatus,
-    capabilities,
-    giftFirst,
-    giftReuse,
-    giftDuplicateBlocked,
+    runId: context.runId,
+    campaignId: context.campaignId,
+    ...buildMetadataEnvelope(config),
+    ...metadata,
     decision,
     reserve,
     execute,
@@ -159,13 +214,45 @@ export async function runHostedGiftAndJobProof(config) {
       paymentId: execute ? extractPaymentId(execute.json) : null,
     },
     states: {
-      giftDuplicateBlocked: Boolean(giftDuplicateBlocked && giftDuplicateBlocked.status >= 400),
       paymentState: execute ? extractPaymentState(execute.json) : null,
     },
     txHashes: {
-      sponsorGift: pickTxHash(giftFirst.json),
       boundedJob: execute ? extractPaymentTxHash(execute.json) ?? pickTxHash(execute.json) : null,
     },
+  };
+}
+
+export async function runHostedGiftAndJobProof(config, options = {}) {
+  const context = buildHostedProofContext(config, options);
+  const metadata = await loadHostedProofMetadata(config);
+  const giftProof = await runHostedGiftProof(config, { context, metadata });
+  const boundedJobProof = await runHostedBoundedJobProof(config, { context, metadata });
+
+  return {
+    generated_at: new Date().toISOString(),
+    runId: context.runId,
+    campaignId: context.campaignId,
+    ...buildMetadataEnvelope(config),
+    ...metadata,
+    giftFirst: giftProof.giftFirst,
+    giftReuse: giftProof.giftReuse,
+    giftDuplicateBlocked: giftProof.giftDuplicateBlocked,
+    decision: boundedJobProof.decision,
+    reserve: boundedJobProof.reserve,
+    execute: boundedJobProof.execute,
+    ids: {
+      ...boundedJobProof.ids,
+    },
+    states: {
+      giftDuplicateBlocked: giftProof.states.giftDuplicateBlocked,
+      paymentState: boundedJobProof.states.paymentState,
+    },
+    txHashes: {
+      sponsorGift: giftProof.txHashes.sponsorGift,
+      boundedJob: boundedJobProof.txHashes.boundedJob,
+    },
+    giftProof,
+    boundedJobProof,
   };
 }
 

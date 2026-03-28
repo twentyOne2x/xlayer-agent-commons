@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildHostedProofContext,
   extractFacilityId,
   extractPaymentState,
   extractPaymentTxHash,
@@ -50,4 +51,28 @@ test("summarizeProofBundle captures hosted proof statuses", () => {
   assert.equal(summary.sponsor_gift_duplicate_blocked, true);
   assert.equal(summary.bounded_job_payment_state, "confirmed");
   assert.equal(summary.x402_replay_status, 200);
+});
+
+test("buildHostedProofContext reuses explicit ids when provided", () => {
+  const context = buildHostedProofContext(
+    {
+      hosted: {
+        matricaSessionId: "session_123",
+        campaignId: "campaign_123",
+        giftIdempotencyKey: "gift_default",
+        jobIdempotencyKey: "job_default",
+        ownerWalletAddress: "0x1111111111111111111111111111111111111111",
+        giftRecipientAddress: "0x2222222222222222222222222222222222222222",
+      },
+    },
+    {
+      runId: "run_123",
+      giftIdempotencyKey: "gift_override",
+    },
+  );
+
+  assert.equal(context.runId, "run_123");
+  assert.equal(context.campaignId, "campaign_123");
+  assert.equal(context.giftIdempotencyKey, "gift_override");
+  assert.equal(context.jobIdempotencyKey, "job_default");
 });

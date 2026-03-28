@@ -41,3 +41,13 @@ This repo lands one bounded standalone slice: XLayer merchant catalog + hosted s
 2. facility closeout and repayment operator flows
 3. full debt or credit framing
 4. any secret-bearing env values
+
+## Standalone shell landed after extraction
+
+1. `apps/demo-shell/server.js`
+2. `apps/demo-shell/lib.js`
+3. `apps/demo-shell/public/index.html`
+4. `apps/demo-shell/public/app.js`
+5. `apps/demo-shell/public/styles.css`
+
+Those files do not reopen extraction. They wire the existing lifted modules into a runnable standalone demo shell.

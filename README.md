@@ -1,13 +1,11 @@
 # XLayer Agent Commons
 
-Open-source XLayer commons bundle for a Matrica-gated sponsor gift, a bounded XLayer job, and follow-on OKX wallet actions.
+Open-source XLayer commons bundle for a Matrica-gated sponsor gift, a bounded XLayer job, and a minimal runnable demo shell around those proof surfaces.
 
-This repo is intentionally a copy-and-adapt slice, not a full attn dump. It keeps the XLayer-specific semantics that can stand alone in public:
-1. exact XLayer merchant ids
-2. sponsor-gift idempotency and one-gift-per-identity proof behavior
-3. bounded job proof capture with tx hashes
-4. OKX wallet and action executor helpers
-5. x402 client code without overstating current live proof
+This repo stays intentionally narrow:
+1. it exposes the lifted XLayer proof modules through a lightweight standalone shell
+2. it keeps blocked or unproven lanes visible without overstating them
+3. it does not pull in the full private attn runtime
 
 ## Honest status
 
@@ -16,22 +14,24 @@ This repo is intentionally a copy-and-adapt slice, not a full attn dump. It keep
 | sponsor gift | yes | Hosted XLayer sponsor gift has a real proof path and tx hash. |
 | bounded job | yes | Hosted bounded job has a real execute path and payment proof. |
 | swap exact in | yes | The swap action shape is lifted here; cite fresh proof when publishing. |
-| x402 exact http | blocked | Keep the codepath, but do not claim current live XLayer proof yet. |
-| add liquidity | unproven | Config and payload shape are copied over, but proof is not established. |
+| x402 exact http | blocked | Present in code, fail-closed in the demo shell, not claimed live. |
+| add liquidity | unproven | Payload shape is carried over, but proof is not established. |
 | OKX invest / collect / withdraw | blocked upstream | Included as executor shapes only; not public-ready. |
 
-## What landed in this slice
+## What landed so far
 
 1. `src/xlayerCatalog.js`
    - lifted XLayer merchant definitions and proof status table
 2. `src/xlayerHostedClient.js`
    - hosted gift, decision, reserve, and execute bridge for proof runs
 3. `src/proof.js`
-   - sponsor-gift idempotency harness and bounded-job proof bundle export
+   - sponsor-gift proof, bounded-job proof, and full proof-pack composition
 4. `src/okxAgenticWallet.js`
    - lifted XLayer wallet resolution plus swap / x402 / defi action executor shapes
+5. `apps/demo-shell/*`
+   - minimal runnable demo shell with feature-status, proof-run, and bundle-export surfaces
 
-Exact source-to-target mapping lives in [docs/extraction-map.md](./docs/extraction-map.md).
+Exact source-to-target mapping lives in [docs/extraction-map.md](./docs/extraction-map.md). Shell behavior is documented in [docs/demo-shell.md](./docs/demo-shell.md).
 
 ## Quick start
 
@@ -40,7 +40,28 @@ Exact source-to-target mapping lives in [docs/extraction-map.md](./docs/extracti
 3. Keep secrets in your shared env file. This repo reads `XLAYER_AGENT_COMMONS_SHARED_ENV_PATH` first and falls back to your existing `ATTN_SHARED_ENV_PATH` or `~/.config/attn/shared.env`.
 4. Leave `.env.example` as placeholders only. Do not commit credentials.
 
-## Demo commands
+## Runnable shell
+
+```bash
+npm run app:start
+```
+
+Then open:
+
+```text
+http://127.0.0.1:3030
+```
+
+The shell exposes:
+1. feature status matrix
+2. sponsor gift proof run
+3. bounded job proof run
+4. full proof-pack run
+5. latest proof bundle download
+
+x402 is shown as blocked / experimental in the shell on purpose.
+
+## CLI commands
 
 ```bash
 npm run demo:matrica
@@ -58,7 +79,7 @@ What they do:
 2. `demo:gift`
    - hits the hosted sponsor-gift endpoint directly
 3. `demo:proof`
-   - runs the sponsor-gift reuse check, duplicate-block check, decision, reserve, and execute flow
+   - runs the combined sponsor-gift and bounded-job proof flow
 4. `demo:wallet`
    - checks whether `onchainos` is installed and whether the OKX wallet session is usable
 5. `demo:wallet-addresses`
@@ -74,6 +95,7 @@ What they do:
 2. reusing the same idempotency key should return the same gift result
 3. a second gift attempt with a fresh idempotency key is expected to block
 4. bounded jobs capture reservation ids, payment ids, payment state, and tx hashes
+5. the shell writes latest proof bundles under `tmp/demo-shell/<kind>/latest`
 
 ## Intentionally excluded
 
