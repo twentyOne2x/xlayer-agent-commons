@@ -182,7 +182,11 @@ test("buildProofLedgerView combines sponsor claim, swap, and paid action truth",
         swap_payment_state: "confirmed",
         swap_tx_hash: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
         swap_pair_key: "usdc/wokb",
+        swap_input_token_symbol: "USDC",
+        swap_output_token_symbol: "WOKB",
         swap_exact_input_amount: "5000000",
+        swap_human_summary:
+          "Swap request: 5000000 raw units of USDC for minimum 4900000 raw units of WOKB on pair usdc/wokb at max 50 bps slippage.",
       },
     },
     paidAction: {
@@ -222,6 +226,12 @@ test("buildProofLedgerView combines sponsor claim, swap, and paid action truth",
   assert.equal(ledger.paidActionStatus, "confirmed");
   assert.equal(ledger.swapTxHash, "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
   assert.equal(ledger.tokenPair, "usdc/wokb");
+  assert.equal(ledger.swapInputTokenSymbol, "USDC");
+  assert.equal(ledger.swapOutputTokenSymbol, "WOKB");
+  assert.equal(
+    ledger.swapHumanSummary,
+    "Swap request: 5000000 raw units of USDC for minimum 4900000 raw units of WOKB on pair usdc/wokb at max 50 bps slippage.",
+  );
   assert.equal(ledger.entries.length, 3);
   assert.equal(ledger.downloads.swap.summary, "/api/proof/download?kind=swap&file=summary");
   assert.equal(ledger.downloads.boundedJob.summary, "/api/proof/download?kind=bounded-job&file=summary");

@@ -261,6 +261,9 @@ export function buildProofLedgerView(input = {}) {
           note: swapActionNote(swapAction, swapSummary),
           pairLabel: swapSummary?.swap_pair_key ?? swapAction?.request?.pairKey ?? null,
           amountDisplay: swapSummary?.swap_exact_input_amount ?? swapAction?.request?.exactInputAmount ?? null,
+          inputTokenSymbol: swapSummary?.swap_input_token_symbol ?? null,
+          outputTokenSymbol: swapSummary?.swap_output_token_symbol ?? null,
+          humanSummary: swapSummary?.swap_human_summary ?? null,
           inputTokenAddress:
             swapSummary?.swap_input_token_address ?? swapAction?.request?.inputTokenAddress ?? null,
           outputTokenAddress:
@@ -329,10 +332,13 @@ export function buildProofLedgerView(input = {}) {
     paidActionStatus: paidActionEntry?.status ?? "not_started",
     tokenPair: swapEntry?.pairLabel ?? null,
     swapAmount: swapEntry?.amountDisplay ?? null,
+    swapInputTokenSymbol: swapEntry?.inputTokenSymbol ?? null,
+    swapOutputTokenSymbol: swapEntry?.outputTokenSymbol ?? null,
     swapInputTokenAddress: swapEntry?.inputTokenAddress ?? null,
     swapOutputTokenAddress: swapEntry?.outputTokenAddress ?? null,
     swapMinOutputAmount: swapEntry?.minOutputAmount ?? null,
     swapSlippageBps: swapEntry?.slippageBps ?? null,
+    swapHumanSummary: swapEntry?.humanSummary ?? null,
     notes,
     entries: [sponsorEntry, swapEntry, paidActionEntry].filter(Boolean),
     downloads: {

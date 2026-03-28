@@ -140,8 +140,14 @@ test("summarizeProofBundle captures swap proof fields", () => {
   assert.equal(summary.swap_payment_state, "confirmed");
   assert.equal(summary.swap_tx_hash, "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd");
   assert.equal(summary.swap_pair_key, "usdc/wokb");
+  assert.equal(summary.swap_input_token_symbol, "USDC");
+  assert.equal(summary.swap_output_token_symbol, "WOKB");
   assert.equal(summary.swap_exact_input_amount, "5000000");
   assert.equal(summary.swap_min_output_amount, "4900000");
+  assert.equal(
+    summary.swap_human_summary,
+    "Swap request: 5000000 raw units of USDC for minimum 4900000 raw units of WOKB on pair usdc/wokb at max 50 bps slippage.",
+  );
 });
 
 test("buildHostedProofContext reuses explicit ids when provided", () => {

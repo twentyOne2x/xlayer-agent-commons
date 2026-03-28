@@ -204,7 +204,10 @@ function swapSummaryText(payload) {
     <dl class="facts">
       <div><dt>Campaign ID</dt><dd>${escapeHtml(summary.campaign_id ?? payload?.request?.campaignId ?? "n/a")}</dd></div>
       <div><dt>Wallet</dt><dd class="mono">${escapeHtml(summary.owner_wallet_address ?? payload?.request?.ownerWalletAddress ?? "n/a")}</dd></div>
+      <div><dt>Readable Summary</dt><dd>${escapeHtml(summary.swap_human_summary ?? "n/a")}</dd></div>
       <div><dt>Pair</dt><dd>${escapeHtml(summary.swap_pair_key ?? payload?.request?.pairKey ?? "n/a")}</dd></div>
+      <div><dt>From Symbol</dt><dd>${escapeHtml(summary.swap_input_token_symbol ?? "n/a")}</dd></div>
+      <div><dt>To Symbol</dt><dd>${escapeHtml(summary.swap_output_token_symbol ?? "n/a")}</dd></div>
       <div><dt>From Token</dt><dd class="mono">${escapeHtml(summary.swap_input_token_address ?? payload?.request?.inputTokenAddress ?? "n/a")}</dd></div>
       <div><dt>To Token</dt><dd class="mono">${escapeHtml(summary.swap_output_token_address ?? payload?.request?.outputTokenAddress ?? "n/a")}</dd></div>
       <div><dt>Exact Input</dt><dd>${escapeHtml(summary.swap_exact_input_amount ?? payload?.request?.exactInputAmount ?? "n/a")}</dd></div>

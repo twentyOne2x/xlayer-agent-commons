@@ -328,6 +328,11 @@ export function summarizeProofBundle(bundle) {
     merchantId === "xlayer_uniswap_swap_exact_in" ||
     Boolean(requestBody?.pair_key && requestBody?.input_token_address && requestBody?.output_token_address);
   const swapTxHash = hostedProof?.txHashes?.swap ?? (swapLike ? hostedProof?.txHashes?.boundedJob ?? null : null);
+  const swapPairKey = swapLike ? requestBody?.pair_key ?? null : null;
+  const [swapInputTokenSymbol, swapOutputTokenSymbol] = deriveSwapPairSymbols(swapPairKey);
+  const swapExactInputAmount = swapLike ? requestBody?.exact_input_amount ?? null : null;
+  const swapMinOutputAmount = swapLike ? requestBody?.min_output_amount ?? null : null;
+  const swapMaxSlippageBps = swapLike ? requestBody?.max_slippage_bps ?? null : null;
   return {
     generated_at: new Date().toISOString(),
     proof_generated_at: hostedProof?.generated_at ?? bundle.generated_at ?? null,
@@ -362,12 +367,24 @@ export function summarizeProofBundle(bundle) {
     swap_status: swapLike ? hostedProof?.execute?.status ?? null : null,
     swap_payment_state: swapLike ? hostedProof?.states?.paymentState ?? null : null,
     swap_tx_hash: swapLike ? swapTxHash : null,
-    swap_pair_key: swapLike ? requestBody?.pair_key ?? null : null,
+    swap_pair_key: swapPairKey,
     swap_input_token_address: swapLike ? requestBody?.input_token_address ?? null : null,
     swap_output_token_address: swapLike ? requestBody?.output_token_address ?? null : null,
-    swap_exact_input_amount: swapLike ? requestBody?.exact_input_amount ?? null : null,
-    swap_min_output_amount: swapLike ? requestBody?.min_output_amount ?? null : null,
-    swap_max_slippage_bps: swapLike ? requestBody?.max_slippage_bps ?? null : null,
+    swap_input_token_symbol: swapInputTokenSymbol,
+    swap_output_token_symbol: swapOutputTokenSymbol,
+    swap_exact_input_amount: swapExactInputAmount,
+    swap_min_output_amount: swapMinOutputAmount,
+    swap_max_slippage_bps: swapMaxSlippageBps,
+    swap_human_summary: swapLike
+      ? buildSwapHumanSummary({
+          pairKey: swapPairKey,
+          inputTokenSymbol: swapInputTokenSymbol,
+          outputTokenSymbol: swapOutputTokenSymbol,
+          exactInputAmount: swapExactInputAmount,
+          minOutputAmount: swapMinOutputAmount,
+          maxSlippageBps: swapMaxSlippageBps,
+        })
+      : null,
     wallet_cli_installed: bundle.wallet?.installed ?? false,
     x402_payment_required: bundle.x402?.paymentRequired ?? null,
     x402_replay_status: bundle.x402?.replay?.status ?? null,
@@ -375,6 +392,33 @@ export function summarizeProofBundle(bundle) {
       surfaces.map((surface) => [surface.surface_id, surface.proof_status]),
     ),
   };
+}
+
+function deriveSwapPairSymbols(pairKey) {
+  if (typeof pairKey !== "string" || !pairKey.includes("/")) return [null, null];
+  const [left, right] = pairKey
+    .split("/")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (!left || !right) return [null, null];
+  return [left.toUpperCase(), right.toUpperCase()];
+}
+
+function buildSwapHumanSummary({
+  pairKey,
+  inputTokenSymbol,
+  outputTokenSymbol,
+  exactInputAmount,
+  minOutputAmount,
+  maxSlippageBps,
+}) {
+  const fromToken = inputTokenSymbol ?? "input token";
+  const toToken = outputTokenSymbol ?? "output token";
+  const pairText = pairKey ? ` on pair ${pairKey}` : "";
+  const inputText = exactInputAmount ? `${exactInputAmount} raw units of ${fromToken}` : fromToken;
+  const outputText = minOutputAmount ? `minimum ${minOutputAmount} raw units of ${toToken}` : toToken;
+  const slippageText = maxSlippageBps !== null && maxSlippageBps !== undefined ? ` at max ${maxSlippageBps} bps slippage` : "";
+  return `Swap request: ${inputText} for ${outputText}${pairText}${slippageText}.`;
 }
 
 export async function writeProofBundle({ outputDir, bundle }) {
