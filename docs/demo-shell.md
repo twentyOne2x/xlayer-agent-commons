@@ -15,6 +15,17 @@ This repo now includes a minimal runnable shell at `apps/demo-shell`.
 9. full proof-pack run plus latest bundle export
 10. x402 as explicitly blocked / experimental in the UI
 
+## Submission handoff
+
+The shell is no longer the whole hackathon story by itself. After you finish a sponsor-plus-swap run, package the artifacts with:
+
+```bash
+npm run demo:seed
+npm run proof-pack:export
+```
+
+That produces a deterministic handoff directory under `tmp/submission-pack/latest` with the current sponsor, swap, ledger, and submission metadata.
+
 ## What it does not claim
 
 1. x402 is not presented as live

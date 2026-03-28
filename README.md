@@ -1,10 +1,10 @@
 # XLayer Agent Commons
 
-Open-source XLayer commons bundle for a Matrica-gated sponsor gift, a first-class XLayer swap journey, a bounded XLayer job proof lane, and a minimal runnable demo shell around those surfaces.
+Open-source XLayer commons bundle for a Matrica-gated sponsor gift, a first-class XLayer swap journey, a proof-backed activity ledger, and a submission-ready hackathon package around those surfaces.
 
 This repo stays intentionally narrow:
 1. it exposes the lifted XLayer proof modules through a lightweight standalone shell
-2. it keeps blocked or unproven lanes visible without overstating them
+2. it packages sponsor-plus-swap evidence into a deterministic proof pack
 3. it does not pull in the full private attn runtime
 
 ## Honest status
@@ -30,8 +30,14 @@ This repo stays intentionally narrow:
    - lifted XLayer wallet resolution plus swap / x402 / defi action executor shapes
 5. `apps/demo-shell/*`
    - minimal runnable demo shell with feature-status, Matrica/session start, sponsor-claim, post-claim swap journey, proof-run, and proof-page surfaces
+6. `src/submissionPack.js`
+   - deterministic sponsor-plus-swap submission-pack builder plus demo-seed contract
+7. `scripts/export-proof-pack.ts`
+   - export the latest sponsor / swap / ledger artifacts into one stable proof-pack directory
+8. `scripts/demo-seed.ts`
+   - print and write the smallest honest hackathon demo contract for the current repo state
 
-Exact source-to-target mapping lives in [docs/extraction-map.md](./docs/extraction-map.md). Shell behavior is documented in [docs/demo-shell.md](./docs/demo-shell.md).
+Exact source-to-target mapping lives in [docs/extraction-map.md](./docs/extraction-map.md). Shell behavior is documented in [docs/demo-shell.md](./docs/demo-shell.md). Submission packaging is documented in [docs/proof-pack.md](./docs/proof-pack.md).
 
 ## Quick start
 
@@ -64,6 +70,44 @@ The shell exposes:
 9. latest proof bundle download
 
 x402 is shown as blocked / experimental in the shell on purpose.
+
+## Hackathon Story
+
+The public story for this repo is intentionally narrow:
+1. a Matrica-verified agent session starts once
+2. the agent claims one sponsored X Layer starter budget
+3. the agent runs one first swap on X Layer
+4. the proof ledger records wallet, campaign, statuses, notes, and tx hashes
+5. x402 remains present in code but blocked / experimental in the public package until real proof exists
+
+## Architecture
+
+The repo keeps the agent architecture explicit without dragging in the private attn runtime:
+1. `identity_agent`
+   - starts and polls Matrica session state
+2. `policy_agent`
+   - enforces campaign, idempotency, and sponsor-claim prerequisites
+3. `settlement_agent`
+   - submits sponsored gift and swap actions through the hosted X Layer bridge
+4. `audit_agent`
+   - records sponsor and swap outcomes in the proof ledger and submission pack
+
+## Submission Pack
+
+Build the smallest honest hackathon package with:
+
+```bash
+npm run demo:seed
+npm run proof-pack:export
+```
+
+This writes a stable pack under:
+
+```text
+tmp/submission-pack/latest
+```
+
+The pack centers sponsor claim, swap, and proof-ledger evidence. If sponsor or swap artifacts are missing, the export still succeeds but marks `proof_ready` false and lists the exact blockers.
 
 ## CLI commands
 
@@ -103,6 +147,7 @@ What they do:
 6. the shell writes latest proof bundles under `tmp/demo-shell/<kind>/latest`
 7. the shell stores Matrica session plus latest sponsor-claim and swap state locally in the browser only
 8. the dedicated proof page reads the latest shell activity record plus current proof summaries
+9. the submission exporter gathers the latest sponsor, swap, and ledger records into `tmp/submission-pack/latest`
 
 ## Intentionally excluded
 
