@@ -8,9 +8,9 @@ This repo now includes a minimal runnable shell at `apps/demo-shell`.
 2. Matrica session start using `startMatricaSession` from `src/xlayerHostedClient.js`
 3. session-status polling using `fetchMatricaSession`
 4. explicit sponsor-claim initiation using `claimSponsoredGift`
-5. sponsor gift proof run from `src/proof.js`
-6. bounded job proof run from `src/proof.js`
-7. one visible post-claim paid action backed by the bounded-job proof path
+5. one visible post-claim swap journey using `runHostedSwapProof` from `src/proof.js`
+6. sponsor gift proof run from `src/proof.js`
+7. bounded job proof run from `src/proof.js`
 8. a dedicated `/proof` page / activity ledger
 9. full proof-pack run plus latest bundle export
 10. x402 as explicitly blocked / experimental in the UI
@@ -44,15 +44,15 @@ The shell now covers the smallest honest journey promised by the spinout spec:
 2. open the hosted authorize URL
 3. poll hosted session status with the returned session id and read token
 4. submit a sponsor claim with explicit wallet, campaign, amount, and idempotency inputs
-5. run one bounded-job paid action from the same session and wallet context
-6. inspect the dedicated proof page with sponsor tx hash, paid-action tx hash, wallet, timestamps, and campaign id
+5. run one swap from the same session and wallet context with explicit pair, token, amount, slippage, and idempotency inputs
+6. inspect the dedicated proof page with sponsor tx hash, swap tx hash, wallet, timestamps, campaign id, and token pair
 
 State stays lightweight:
 
 1. session id
 2. session read token
 3. sponsor-claim inputs
-4. latest paid-action summary
+4. latest swap summary
 
 Those are stored in browser local storage only. The proof page itself reads the current proof artifacts under `tmp/` and the latest shell activity record under `tmp/demo-shell/activity/`.
 
@@ -67,5 +67,6 @@ tmp/demo-shell/<kind>/latest
 Where `<kind>` is one of:
 
 1. `gift`
-2. `bounded-job`
-3. `full`
+2. `swap`
+3. `bounded-job`
+4. `full`

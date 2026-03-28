@@ -1,17 +1,20 @@
-const proofKinds = ["gift", "bounded-job", "full"];
+const proofKinds = ["gift", "swap", "bounded-job", "full"];
 const storageKey = "xlayer-agent-commons:journey";
 
 const journeyState = {
   defaults: null,
   paidActionDefaults: null,
+  swapDefaults: null,
   started: null,
   session: null,
   claim: null,
+  swap: null,
   paidAction: null,
 };
 
 function formatLabel(kind) {
   if (kind === "gift") return "Sponsor Gift";
+  if (kind === "swap") return "Swap";
   if (kind === "bounded-job") return "Bounded Job";
   return "Full Proof Pack";
 }
@@ -54,6 +57,7 @@ function saveStoredJourney() {
     started: journeyState.started,
     session: journeyState.session,
     claim: journeyState.claim,
+    swap: journeyState.swap,
     paidAction: journeyState.paidAction,
   };
   window.localStorage.setItem(storageKey, JSON.stringify(payload));
@@ -127,6 +131,7 @@ function renderStartSummary(payload) {
 
 function renderSessionSummary(payload) {
   const target = document.querySelector("#session-summary");
+  if (!target) return;
   if (!payload?.summary) {
     target.className = "result-card empty";
     target.textContent = "No session status loaded yet.";
@@ -138,6 +143,7 @@ function renderSessionSummary(payload) {
 
 function renderClaimSummary(payload) {
   const target = document.querySelector("#claim-summary");
+  if (!target) return;
   if (!payload?.summary) {
     target.className = "result-card empty";
     target.textContent = "No sponsor claim attempted yet.";
@@ -173,6 +179,7 @@ function paidActionSummaryText(payload) {
 
 function renderPaidActionSummary(payload) {
   const target = document.querySelector("#paid-action-summary");
+  if (!target) return;
   if (!payload?.summary && !payload?.error) {
     target.className = "result-card empty";
     target.textContent = "No post-claim paid action has been attempted yet.";
@@ -182,16 +189,59 @@ function renderPaidActionSummary(payload) {
   target.innerHTML = paidActionSummaryText(payload);
 }
 
+function swapSummaryText(payload) {
+  if (payload?.error?.code) {
+    return `
+      <dl class="facts">
+        <div><dt>Status</dt><dd>failed_closed</dd></div>
+        <div><dt>Code</dt><dd>${escapeHtml(payload.error.code)}</dd></div>
+      </dl>
+    `;
+  }
+
+  const summary = payload?.summary ?? {};
+  return `
+    <dl class="facts">
+      <div><dt>Campaign ID</dt><dd>${escapeHtml(summary.campaign_id ?? payload?.request?.campaignId ?? "n/a")}</dd></div>
+      <div><dt>Wallet</dt><dd class="mono">${escapeHtml(summary.owner_wallet_address ?? payload?.request?.ownerWalletAddress ?? "n/a")}</dd></div>
+      <div><dt>Pair</dt><dd>${escapeHtml(summary.swap_pair_key ?? payload?.request?.pairKey ?? "n/a")}</dd></div>
+      <div><dt>From Token</dt><dd class="mono">${escapeHtml(summary.swap_input_token_address ?? payload?.request?.inputTokenAddress ?? "n/a")}</dd></div>
+      <div><dt>To Token</dt><dd class="mono">${escapeHtml(summary.swap_output_token_address ?? payload?.request?.outputTokenAddress ?? "n/a")}</dd></div>
+      <div><dt>Exact Input</dt><dd>${escapeHtml(summary.swap_exact_input_amount ?? payload?.request?.exactInputAmount ?? "n/a")}</dd></div>
+      <div><dt>Minimum Output</dt><dd>${escapeHtml(summary.swap_min_output_amount ?? payload?.request?.minOutputAmount ?? "n/a")}</dd></div>
+      <div><dt>Slippage Bps</dt><dd>${escapeHtml(summary.swap_max_slippage_bps ?? payload?.request?.maxSlippageBps ?? "n/a")}</dd></div>
+      <div><dt>Decision</dt><dd>${escapeHtml(summary.swap_decision_status ?? "n/a")}</dd></div>
+      <div><dt>Swap Status</dt><dd>${escapeHtml(summary.swap_status ?? "n/a")}</dd></div>
+      <div><dt>Payment State</dt><dd>${escapeHtml(summary.swap_payment_state ?? "n/a")}</dd></div>
+      <div><dt>Tx Hash</dt><dd class="mono">${escapeHtml(summary.swap_tx_hash ?? "not returned")}</dd></div>
+    </dl>
+  `;
+}
+
+function renderSwapSummary(payload) {
+  const target = document.querySelector("#swap-summary");
+  if (!target) return;
+  if (!payload?.summary && !payload?.error) {
+    target.className = "result-card empty";
+    target.textContent = "No post-claim swap has been attempted yet.";
+    return;
+  }
+  target.className = "result-card";
+  target.innerHTML = swapSummaryText(payload);
+}
+
 function hydrateJourneyForms() {
   const stored = loadStoredJourney();
   journeyState.started = stored.started ?? null;
   journeyState.session = stored.session ?? null;
   journeyState.claim = stored.claim ?? null;
+  journeyState.swap = stored.swap ?? null;
   journeyState.paidAction = stored.paidAction ?? null;
 
   renderStartSummary(journeyState.started);
   renderSessionSummary(journeyState.session);
   renderClaimSummary(journeyState.claim);
+  renderSwapSummary(journeyState.swap);
   renderPaidActionSummary(journeyState.paidAction);
 
   fillForm("#session-form", {
@@ -212,6 +262,22 @@ function hydrateJourneyForms() {
     idempotencyKey:
       journeyState.claim?.request?.idempotencyKey ?? journeyState.defaults?.idempotencyKey ?? "",
   });
+
+  fillForm("#swap-form", {
+    pairKey: journeyState.swap?.request?.pairKey ?? journeyState.swapDefaults?.pairKey ?? "",
+    inputTokenAddress:
+      journeyState.swap?.request?.inputTokenAddress ?? journeyState.swapDefaults?.inputTokenAddress ?? "",
+    outputTokenAddress:
+      journeyState.swap?.request?.outputTokenAddress ?? journeyState.swapDefaults?.outputTokenAddress ?? "",
+    exactInputAmount:
+      journeyState.swap?.request?.exactInputAmount ?? journeyState.swapDefaults?.exactInputAmount ?? "",
+    minOutputAmount:
+      journeyState.swap?.request?.minOutputAmount ?? journeyState.swapDefaults?.minOutputAmount ?? "",
+    maxSlippageBps:
+      journeyState.swap?.request?.maxSlippageBps ?? journeyState.swapDefaults?.maxSlippageBps ?? "",
+    jobIdempotencyKey:
+      journeyState.swap?.request?.jobIdempotencyKey ?? journeyState.swapDefaults?.jobIdempotencyKey ?? "",
+  });
 }
 
 function badgeClass(status) {
@@ -226,7 +292,8 @@ function renderStatus(statusPayload) {
   const table = document.querySelector("#status-table");
   meta.innerHTML = `
     <div class="meta-chip">Hosted bridge: <strong>${escapeHtml(statusPayload.hosted_base_url)}</strong></div>
-    <div class="meta-chip">Merchant: <strong>${escapeHtml(statusPayload.merchant_id)}</strong></div>
+    <div class="meta-chip">Bounded job merchant: <strong>${escapeHtml(statusPayload.merchant_id)}</strong></div>
+    <div class="meta-chip">Swap merchant: <strong>${escapeHtml(statusPayload.swap_merchant_id || "xlayer_uniswap_swap_exact_in")}</strong></div>
     <div class="meta-chip">Proof root: <strong>${escapeHtml(statusPayload.proof_output_root)}</strong></div>
   `;
   table.innerHTML = statusPayload.surfaces
@@ -245,6 +312,7 @@ function renderStatus(statusPayload) {
 function renderBundle(kind, payload) {
   const body = document.querySelector(`#${kind}-body`);
   const pill = document.querySelector(`#${kind}-pill`);
+  if (!body || !pill) return;
   if (!payload.exists) {
     pill.textContent = "empty";
     pill.className = "pill waiting";
@@ -256,10 +324,30 @@ function renderBundle(kind, payload) {
   }
 
   const summary = payload.summary ?? {};
-  const sponsorHash = summary.sponsor_gift_tx_hash || "not captured";
-  const boundedHash = summary.bounded_job_tx_hash || "not captured";
   pill.textContent = "ready";
   pill.className = "pill ready";
+  if (kind === "swap") {
+    body.innerHTML = `
+      <dl class="facts">
+        <div><dt>Merchant</dt><dd>${escapeHtml(summary.merchant_id || "unknown")}</dd></div>
+        <div><dt>Pair</dt><dd>${escapeHtml(summary.swap_pair_key || "n/a")}</dd></div>
+        <div><dt>Decision</dt><dd>${escapeHtml(summary.swap_decision_status ?? "n/a")}</dd></div>
+        <div><dt>Swap Status</dt><dd>${escapeHtml(summary.swap_status ?? "n/a")}</dd></div>
+        <div><dt>Exact Input</dt><dd>${escapeHtml(summary.swap_exact_input_amount ?? "n/a")}</dd></div>
+        <div><dt>Minimum Output</dt><dd>${escapeHtml(summary.swap_min_output_amount ?? "n/a")}</dd></div>
+        <div><dt>Swap Tx</dt><dd class="mono">${escapeHtml(summary.swap_tx_hash || "not captured")}</dd></div>
+      </dl>
+      <div class="download-row">
+        <a href="${payload.downloadPaths.summary}">Download Summary</a>
+        <a href="${payload.downloadPaths.bundle}">Download Bundle</a>
+      </div>
+      <p class="hint small">${escapeHtml(payload.outputDir)}</p>
+    `;
+    return;
+  }
+
+  const sponsorHash = summary.sponsor_gift_tx_hash || "not captured";
+  const boundedHash = summary.bounded_job_tx_hash || "not captured";
   body.innerHTML = `
     <dl class="facts">
       <div><dt>Merchant</dt><dd>${escapeHtml(summary.merchant_id || "unknown")}</dd></div>
@@ -280,6 +368,7 @@ async function refreshStatus() {
   const payload = await readJson("/api/status");
   journeyState.defaults = payload.journeyDefaults ?? null;
   journeyState.paidActionDefaults = payload.paidActionDefaults ?? null;
+  journeyState.swapDefaults = payload.swapDefaults ?? null;
   renderStatus(payload.status);
 }
 
@@ -386,6 +475,29 @@ function buildPaidActionRequest() {
   };
 }
 
+function buildSwapRequest() {
+  const sessionForm = document.querySelector("#session-form");
+  const claimForm = document.querySelector("#claim-form");
+  const swapForm = document.querySelector("#swap-form");
+  const ownerWalletAddress =
+    journeyState.session?.summary?.ownerWallet ??
+    claimForm.elements.namedItem("recipientAddress").value.trim();
+  return {
+    sessionId: sessionForm.elements.namedItem("sessionId").value.trim(),
+    sessionToken: sessionForm.elements.namedItem("sessionToken").value.trim(),
+    campaignId: claimForm.elements.namedItem("campaignId").value.trim(),
+    recipientAddress: claimForm.elements.namedItem("recipientAddress").value.trim(),
+    ownerWalletAddress,
+    pairKey: swapForm.elements.namedItem("pairKey").value.trim(),
+    inputTokenAddress: swapForm.elements.namedItem("inputTokenAddress").value.trim(),
+    outputTokenAddress: swapForm.elements.namedItem("outputTokenAddress").value.trim(),
+    exactInputAmount: swapForm.elements.namedItem("exactInputAmount").value.trim(),
+    minOutputAmount: swapForm.elements.namedItem("minOutputAmount").value.trim(),
+    maxSlippageBps: swapForm.elements.namedItem("maxSlippageBps").value.trim(),
+    jobIdempotencyKey: swapForm.elements.namedItem("jobIdempotencyKey").value.trim(),
+  };
+}
+
 async function runPaidAction() {
   const request = buildPaidActionRequest();
   const payload = await readJson("/api/paid-action/run", {
@@ -401,10 +513,25 @@ async function runPaidAction() {
   return payload;
 }
 
+async function runSwap() {
+  const request = buildSwapRequest();
+  const payload = await readJson("/api/swap/run", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  payload.request = request;
+  journeyState.swap = payload;
+  renderSwapSummary(payload);
+  saveStoredJourney();
+  await refreshBundle("swap");
+  return payload;
+}
+
 document.querySelector("#refresh-status").addEventListener("click", () => {
+  const status = document.querySelector("#action-status");
   refreshStatus().catch((error) => {
-    document.querySelector("#action-status").textContent =
-      `Status refresh failed: ${error instanceof Error ? error.message : String(error)}`;
+    status.textContent = `Status refresh failed: ${error instanceof Error ? error.message : String(error)}`;
   });
 });
 
@@ -445,23 +572,23 @@ document.querySelector("#claim-form").addEventListener("submit", (event) => {
     });
 });
 
-document.querySelector("#run-paid-action").addEventListener("click", () => {
+document.querySelector("#run-swap").addEventListener("click", () => {
   const status = document.querySelector("#action-status");
-  status.textContent = "Running first paid action...";
-  runPaidAction()
+  status.textContent = "Running first swap...";
+  runSwap()
     .then((payload) => {
-      const txHash = payload.summary?.bounded_job_tx_hash ? ` tx: ${payload.summary.bounded_job_tx_hash}` : "";
-      status.textContent = `Paid action returned ${payload.summary?.bounded_job_status ?? "n/a"}.${txHash}`;
+      const txHash = payload.summary?.swap_tx_hash ? ` tx: ${payload.summary.swap_tx_hash}` : "";
+      status.textContent = `Swap returned ${payload.summary?.swap_status ?? "n/a"}.${txHash}`;
     })
     .catch((error) => {
-      journeyState.paidAction = {
+      journeyState.swap = {
         error: {
           code: error instanceof Error ? error.message : String(error),
         },
       };
-      renderPaidActionSummary(journeyState.paidAction);
+      renderSwapSummary(journeyState.swap);
       saveStoredJourney();
-      status.textContent = `Paid action failed closed: ${error instanceof Error ? error.message : String(error)}`;
+      status.textContent = `Swap failed closed: ${error instanceof Error ? error.message : String(error)}`;
     });
 });
 

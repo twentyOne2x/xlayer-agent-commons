@@ -155,30 +155,46 @@ export function getProofSurface(surfaceId) {
   return listProofSurfaces().find((surface) => surface.surface_id === surfaceId) ?? null;
 }
 
-export function buildHostedJobRequestBody({ merchantId, runId, ownerWallet }) {
+export function buildHostedJobRequestBody({
+  merchantId,
+  runId,
+  ownerWallet,
+  contractAddress,
+  pairKey,
+  inputTokenAddress,
+  outputTokenAddress,
+  exactInputAmount,
+  minOutputAmount,
+  maxSlippageBps,
+  poolKey,
+  token0Address,
+  token1Address,
+  amount0Desired,
+  amount1Desired,
+}) {
   if (merchantId === "xlayer_uniswap_swap_exact_in") {
     return {
-      contract_address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      contract_address: contractAddress || "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       recipient_address: ownerWallet,
-      pair_key: "usdc/wokb",
-      input_token_address: "0x4444444444444444444444444444444444444444",
-      output_token_address: "0x5555555555555555555555555555555555555555",
-      exact_input_amount: "5000000",
-      min_output_amount: "4900000",
-      max_slippage_bps: 50,
+      pair_key: pairKey || "usdc/wokb",
+      input_token_address: inputTokenAddress || "0x4444444444444444444444444444444444444444",
+      output_token_address: outputTokenAddress || "0x5555555555555555555555555555555555555555",
+      exact_input_amount: exactInputAmount || "5000000",
+      min_output_amount: minOutputAmount || "4900000",
+      max_slippage_bps: maxSlippageBps ?? 50,
       proofRunId: runId,
     };
   }
   if (merchantId === "xlayer_uniswap_add_liquidity") {
     return {
-      contract_address: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      contract_address: contractAddress || "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       recipient_address: ownerWallet,
-      pool_key: "usdc/wokb:3000",
-      token0_address: "0x4444444444444444444444444444444444444444",
-      token1_address: "0x5555555555555555555555555555555555555555",
-      amount0_desired: "2500000",
-      amount1_desired: "2500000",
-      max_slippage_bps: 75,
+      pool_key: poolKey || "usdc/wokb:3000",
+      token0_address: token0Address || "0x4444444444444444444444444444444444444444",
+      token1_address: token1Address || "0x5555555555555555555555555555555555555555",
+      amount0_desired: amount0Desired || "2500000",
+      amount1_desired: amount1Desired || "2500000",
+      max_slippage_bps: maxSlippageBps ?? 75,
       proofRunId: runId,
     };
   }

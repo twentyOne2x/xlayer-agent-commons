@@ -11,6 +11,7 @@ import {
   fetchJourneySession,
   normalizeProofKind,
   paidActionDefaults,
+  persistSwapAction,
   persistProofKind,
   persistPaidAction,
   proofOutputDir,
@@ -19,6 +20,7 @@ import {
   runSponsorClaim,
   sponsorClaimDefaults,
   startJourneySession,
+  swapDefaults,
 } from "./lib.js";
 
 const publicDir = resolve(process.cwd(), "apps/demo-shell/public");
@@ -126,6 +128,7 @@ async function handleApi(req, res, url) {
       status: featureStatusSnapshot(config),
       journeyDefaults: sponsorClaimDefaults(config),
       paidActionDefaults: paidActionDefaults(config),
+      swapDefaults: swapDefaults(config),
     });
     return;
   }
@@ -197,6 +200,25 @@ async function handleApi(req, res, url) {
     try {
       const body = await readRequestJson(req);
       const result = await persistPaidAction(currentConfig(), body);
+      sendJson(res, 200, {
+        ok: true,
+        ...result,
+      });
+    } catch (error) {
+      sendJson(res, 500, {
+        ok: false,
+        error: {
+          code: error instanceof Error ? error.message : String(error),
+        },
+      });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/swap/run") {
+    try {
+      const body = await readRequestJson(req);
+      const result = await persistSwapAction(currentConfig(), body);
       sendJson(res, 200, {
         ok: true,
         ...result,

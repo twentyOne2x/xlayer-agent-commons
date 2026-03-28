@@ -34,9 +34,13 @@ function renderOverview(ledger) {
     ["Campaign ID", ledger.campaignId || "not captured yet"],
     ["Wallet", ledger.wallet || "not captured yet"],
     ["Sponsor Tx", ledger.sponsorTxHash || "not captured yet"],
-    ["Paid Action Tx", ledger.paidActionTxHash || "not captured yet"],
+    ["Swap Tx", ledger.swapTxHash || "not captured yet"],
+    ["Token Pair", ledger.tokenPair || "not captured yet"],
+    ["Exact Input", ledger.swapAmount || "not captured yet"],
+    ["Min Output", ledger.swapMinOutputAmount || "not captured yet"],
+    ["Slippage Bps", ledger.swapSlippageBps || "not captured yet"],
     ["Sponsor Status", ledger.sponsorStatus || "not_started"],
-    ["Paid Action Status", ledger.paidActionStatus || "not_started"],
+    ["Swap Status", ledger.swapStatus || "not_started"],
   ];
   target.innerHTML = cards
     .map(
@@ -62,7 +66,7 @@ function renderEntries(ledger) {
   if (!Array.isArray(ledger.entries) || ledger.entries.length === 0) {
     target.innerHTML = `
       <tr>
-        <td colspan="7" class="hint">No proof entries have been captured by this standalone shell yet.</td>
+        <td colspan="9" class="hint">No proof entries have been captured by this standalone shell yet.</td>
       </tr>
     `;
     return;
@@ -76,6 +80,8 @@ function renderEntries(ledger) {
           <td class="mono">${escapeHtml(entry.txHash || "not returned")}</td>
           <td class="mono">${escapeHtml(entry.wallet || "n/a")}</td>
           <td>${escapeHtml(entry.campaignId || "n/a")}</td>
+          <td>${escapeHtml(entry.pairLabel || "n/a")}</td>
+          <td>${escapeHtml(entry.amountDisplay || "n/a")}</td>
           <td>${escapeHtml(entry.timestamp || "n/a")}</td>
           <td>${escapeHtml(entry.note || "n/a")}</td>
         </tr>
@@ -89,6 +95,8 @@ function renderDownloads(ledger) {
   const groups = [
     ["Gift Summary", ledger.downloads?.gift?.summary],
     ["Gift Bundle", ledger.downloads?.gift?.bundle],
+    ["Swap Summary", ledger.downloads?.swap?.summary],
+    ["Swap Bundle", ledger.downloads?.swap?.bundle],
     ["Bounded Summary", ledger.downloads?.boundedJob?.summary],
     ["Bounded Bundle", ledger.downloads?.boundedJob?.bundle],
     ["Full Summary", ledger.downloads?.full?.summary],

@@ -19,8 +19,8 @@
         <h1>XLayer Agent Commons</h1>
         <p class="lede">
           A lightweight standalone shell for the lifted XLayer proof modules. It shows the current feature
-          posture, runs sponsor-gift and bounded-job proofs, and exports the latest proof bundles without
-          pretending blocked lanes are live.
+          posture, walks a Matrica-gated sponsor-claim to swap journey, and exports the latest proof bundles
+          without pretending blocked lanes are live.
         </p>
       </section>
 
@@ -91,18 +91,46 @@
           </article>
 
           <article class="journey-step">
-            <h3>4. Run Your First Paid Action</h3>
+            <h3>4. Run Your First Swap</h3>
             <p class="hint">
-              This shell keeps the first paid action narrow on purpose: it reuses the existing bounded-job XLayer
-              path with the same campaign and wallet context from your claim flow.
+              This is the first-class post-claim XLayer path in the standalone shell. It reuses the existing
+              hosted decision, reserve, and execute rail while keeping the lifted swap merchant and inputs explicit.
             </p>
-            <div class="actions single">
-              <button id="run-paid-action" class="accent">Run First Paid Action</button>
-              <a href="/proof">Open Proof Page</a>
-            </div>
-            <div id="paid-action-summary" class="result-card empty">
-              No post-claim paid action has been attempted yet.
-            </div>
+            <form id="swap-form" class="stack-form">
+              <label>
+                <span>Pair Key</span>
+                <input id="swap-pair-key" name="pairKey" placeholder="usdc/wokb" />
+              </label>
+              <label>
+                <span>From Token</span>
+                <input id="swap-input-token" name="inputTokenAddress" placeholder="0x..." />
+              </label>
+              <label>
+                <span>To Token</span>
+                <input id="swap-output-token" name="outputTokenAddress" placeholder="0x..." />
+              </label>
+              <label>
+                <span>Exact Input Amount</span>
+                <input id="swap-exact-input" name="exactInputAmount" placeholder="5000000" />
+              </label>
+              <label>
+                <span>Minimum Output Amount</span>
+                <input id="swap-min-output" name="minOutputAmount" placeholder="4900000" />
+              </label>
+              <label>
+                <span>Slippage Bps</span>
+                <input id="swap-slippage" name="maxSlippageBps" type="number" min="1" step="1" />
+              </label>
+              <label>
+                <span>Swap Idempotency Key</span>
+                <input id="swap-idempotency-key" name="jobIdempotencyKey" placeholder="xlayer_swap_..." />
+              </label>
+              <div class="actions single">
+                <button id="run-swap" type="button" class="accent">Run First Swap</button>
+                <a href="/proof">Open Proof Page</a>
+              </div>
+            </form>
+            <div id="swap-summary" class="result-card empty">No post-claim swap has been attempted yet.</div>
           </article>
         </div>
       </section>
@@ -143,8 +171,8 @@
           <button data-kind="full" class="accent">Run Full Proof Pack</button>
         </div>
         <p id="action-status" class="hint">
-          These actions use the existing lifted proof modules. Missing session or wallet env values fail closed and
-          return structured errors.
+          These actions use the existing lifted proof modules. Swap is first-class in the journey above. x402 stays
+          blocked, and missing session or wallet values fail closed with structured errors.
         </p>
       </section>
 
@@ -158,6 +186,17 @@
       </section>
 
       <section class="grid">
+        <article class="panel">
+          <div class="section-head compact">
+            <div>
+              <p class="eyebrow">Latest Bundle</p>
+              <h2>Swap</h2>
+            </div>
+            <span id="swap-pill" class="pill">waiting</span>
+          </div>
+          <div id="swap-body" class="bundle-body"></div>
+        </article>
+
         <article class="panel">
           <div class="section-head compact">
             <div>

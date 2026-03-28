@@ -20,14 +20,24 @@ test("listXLayerMerchants preserves the lifted XLayer merchant ids", () => {
 });
 
 test("buildHostedJobRequestBody carries the source swap and lp payload shapes", () => {
-  assert.equal(
-    buildHostedJobRequestBody({
-      merchantId: "xlayer_uniswap_swap_exact_in",
-      runId: "run-1",
-      ownerWallet: "0x1111111111111111111111111111111111111111",
-    }).pair_key,
-    "usdc/wokb",
-  );
+  const swapBody = buildHostedJobRequestBody({
+    merchantId: "xlayer_uniswap_swap_exact_in",
+    runId: "run-1",
+    ownerWallet: "0x1111111111111111111111111111111111111111",
+    pairKey: "wokb/usdc",
+    inputTokenAddress: "0x1234",
+    outputTokenAddress: "0xabcd",
+    exactInputAmount: "123",
+    minOutputAmount: "120",
+    maxSlippageBps: 25,
+  });
+
+  assert.equal(swapBody.pair_key, "wokb/usdc");
+  assert.equal(swapBody.input_token_address, "0x1234");
+  assert.equal(swapBody.output_token_address, "0xabcd");
+  assert.equal(swapBody.exact_input_amount, "123");
+  assert.equal(swapBody.min_output_amount, "120");
+  assert.equal(swapBody.max_slippage_bps, 25);
 
   assert.equal(
     buildHostedJobRequestBody({

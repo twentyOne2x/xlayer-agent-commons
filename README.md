@@ -1,6 +1,6 @@
 # XLayer Agent Commons
 
-Open-source XLayer commons bundle for a Matrica-gated sponsor gift, a bounded XLayer job, and a minimal runnable demo shell around those proof surfaces.
+Open-source XLayer commons bundle for a Matrica-gated sponsor gift, a first-class XLayer swap journey, a bounded XLayer job proof lane, and a minimal runnable demo shell around those surfaces.
 
 This repo stays intentionally narrow:
 1. it exposes the lifted XLayer proof modules through a lightweight standalone shell
@@ -29,7 +29,7 @@ This repo stays intentionally narrow:
 4. `src/okxAgenticWallet.js`
    - lifted XLayer wallet resolution plus swap / x402 / defi action executor shapes
 5. `apps/demo-shell/*`
-   - minimal runnable demo shell with feature-status, Matrica/session start, sponsor-claim, post-claim paid action, proof-run, and proof-page surfaces
+   - minimal runnable demo shell with feature-status, Matrica/session start, sponsor-claim, post-claim swap journey, proof-run, and proof-page surfaces
 
 Exact source-to-target mapping lives in [docs/extraction-map.md](./docs/extraction-map.md). Shell behavior is documented in [docs/demo-shell.md](./docs/demo-shell.md).
 
@@ -56,8 +56,8 @@ The shell exposes:
 1. feature status matrix
 2. Matrica session start and session-status polling
 3. explicit sponsor-claim form with campaign, wallet, amount, and idempotency inputs
-4. one visible post-claim paid-action step backed by the bounded-job proof path
-5. a dedicated `/proof` page / activity ledger
+4. one visible post-claim swap step with explicit pair, token, amount, slippage, and idempotency inputs
+5. a dedicated `/proof` page / activity ledger with sponsor and swap facts
 6. sponsor gift proof run
 7. bounded job proof run
 8. full proof-pack run
@@ -99,9 +99,10 @@ What they do:
 2. reusing the same idempotency key should return the same gift result
 3. a second gift attempt with a fresh idempotency key is expected to block
 4. bounded jobs capture reservation ids, payment ids, payment state, and tx hashes
-5. the shell writes latest proof bundles under `tmp/demo-shell/<kind>/latest`
-6. the shell stores Matrica session plus latest sponsor-claim and paid-action state locally in the browser only
-7. the dedicated proof page reads the latest shell activity record plus current proof summaries
+5. swaps capture pair, token, amount, slippage, payment state, and tx hashes on the same hosted rail
+6. the shell writes latest proof bundles under `tmp/demo-shell/<kind>/latest`
+7. the shell stores Matrica session plus latest sponsor-claim and swap state locally in the browser only
+8. the dedicated proof page reads the latest shell activity record plus current proof summaries
 
 ## Intentionally excluded
 

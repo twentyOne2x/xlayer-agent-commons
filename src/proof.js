@@ -33,10 +33,10 @@ async function writeJson(path, value) {
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
-function buildMetadataEnvelope(config) {
+function buildMetadataEnvelope(config, options = {}) {
   return {
     proof_surfaces: listProofSurfaces(),
-    merchantId: config.hosted.merchantId,
+    merchantId: options.merchantId ?? config.hosted.merchantId,
   };
 }
 
@@ -112,6 +112,109 @@ export function extractPaymentTxHash(value) {
   );
 }
 
+function buildHostedJobProofEnvelope({
+  config,
+  context,
+  metadata,
+  merchantId,
+  requestBodyJson,
+  amountUsd,
+  decision,
+  reserve,
+  execute,
+}) {
+  const paymentTxHash = execute ? extractPaymentTxHash(execute.json) ?? pickTxHash(execute.json) : null;
+  return {
+    generated_at: new Date().toISOString(),
+    runId: context.runId,
+    campaignId: context.campaignId,
+    ownerWalletAddress: context.ownerWalletAddress,
+    ...buildMetadataEnvelope(config, { merchantId }),
+    ...metadata,
+    decision,
+    reserve,
+    execute,
+    requestBodyJson,
+    amountUsd,
+    ids: {
+      facilityId: extractFacilityId(decision.json),
+      reservationId: reserve ? extractReservationId(reserve.json) : null,
+      paymentId: execute ? extractPaymentId(execute.json) : null,
+    },
+    states: {
+      paymentState: execute ? extractPaymentState(execute.json) : null,
+    },
+    txHashes: {
+      boundedJob: paymentTxHash,
+      swap: merchantId === "xlayer_uniswap_swap_exact_in" ? paymentTxHash : null,
+    },
+  };
+}
+
+async function runHostedMerchantJobProof(config, options = {}) {
+  assertMatricaSession(config);
+  const context = options.context ?? buildHostedProofContext(config, options);
+  const metadata = options.metadata ?? (await loadHostedProofMetadata(config));
+  const merchantId = options.merchantId || config.hosted.merchantId;
+  const amountUsd = Number(options.amountUsd ?? config.hosted.jobAmountUsd);
+  const normalizedAmountUsd = Number.isFinite(amountUsd) && amountUsd > 0 ? amountUsd : config.hosted.jobAmountUsd;
+  const requestBodyJson =
+    options.requestBodyJson ??
+    (typeof options.requestBodyFactory === "function"
+      ? options.requestBodyFactory(context)
+      : buildHostedJobRequestBody({
+          merchantId,
+          runId: context.runId,
+          ownerWallet: context.ownerWalletAddress,
+        }));
+
+  const decision = await requestBoundedJobDecision({
+    baseUrl: config.hosted.baseUrl,
+    matricaSessionId: config.hosted.matricaSessionId,
+    requestedBudgetUsd: normalizedAmountUsd,
+    maxBudgetUsd: Math.max(config.hosted.giftAmountUsd, normalizedAmountUsd, 5),
+    now: new Date().toISOString(),
+  });
+
+  const facilityId = extractFacilityId(decision.json);
+  const reserve =
+    facilityId
+      ? await reserveBoundedJob({
+          baseUrl: config.hosted.baseUrl,
+          facilityId,
+          merchantId,
+          amountUsd: normalizedAmountUsd,
+          endpointMethod: "POST",
+          endpointPath: "/jobs",
+          requestBodyJson,
+          idempotencyKey: context.jobIdempotencyKey,
+          now: new Date().toISOString(),
+        })
+      : null;
+
+  const reservationId = reserve ? extractReservationId(reserve.json) : null;
+  const execute =
+    reservationId
+      ? await executeBoundedJob({
+          baseUrl: config.hosted.baseUrl,
+          reservationId,
+          now: new Date().toISOString(),
+        })
+      : null;
+
+  return buildHostedJobProofEnvelope({
+    config,
+    context,
+    metadata,
+    merchantId,
+    requestBodyJson,
+    amountUsd: normalizedAmountUsd,
+    decision,
+    reserve,
+    execute,
+  });
+}
+
 export async function runHostedGiftProof(config, options = {}) {
   assertMatricaSession(config);
   assertGiftRecipient(config);
@@ -158,70 +261,26 @@ export async function runHostedGiftProof(config, options = {}) {
 }
 
 export async function runHostedBoundedJobProof(config, options = {}) {
-  assertMatricaSession(config);
-  const context = options.context ?? buildHostedProofContext(config, options);
-  const metadata = options.metadata ?? (await loadHostedProofMetadata(config));
+  return runHostedMerchantJobProof(config, options);
+}
 
-  const decision = await requestBoundedJobDecision({
-    baseUrl: config.hosted.baseUrl,
-    matricaSessionId: config.hosted.matricaSessionId,
-    requestedBudgetUsd: config.hosted.jobAmountUsd,
-    maxBudgetUsd: Math.max(config.hosted.giftAmountUsd, config.hosted.jobAmountUsd, 5),
-    now: new Date().toISOString(),
+export async function runHostedSwapProof(config, options = {}) {
+  return runHostedMerchantJobProof(config, {
+    ...options,
+    merchantId: "xlayer_uniswap_swap_exact_in",
+    requestBodyFactory: (context) =>
+      buildHostedJobRequestBody({
+        merchantId: "xlayer_uniswap_swap_exact_in",
+        runId: context.runId,
+        ownerWallet: context.ownerWalletAddress,
+        pairKey: options.pairKey,
+        inputTokenAddress: options.inputTokenAddress,
+        outputTokenAddress: options.outputTokenAddress,
+        exactInputAmount: options.exactInputAmount,
+        minOutputAmount: options.minOutputAmount,
+        maxSlippageBps: options.maxSlippageBps,
+      }),
   });
-
-  const facilityId = extractFacilityId(decision.json);
-  const reserve =
-    facilityId
-      ? await reserveBoundedJob({
-          baseUrl: config.hosted.baseUrl,
-          facilityId,
-          merchantId: config.hosted.merchantId,
-          amountUsd: config.hosted.jobAmountUsd,
-          endpointMethod: "POST",
-          endpointPath: "/jobs",
-          requestBodyJson: buildHostedJobRequestBody({
-            merchantId: config.hosted.merchantId,
-            runId: context.runId,
-            ownerWallet: context.ownerWalletAddress,
-          }),
-          idempotencyKey: context.jobIdempotencyKey,
-          now: new Date().toISOString(),
-        })
-      : null;
-
-  const reservationId = reserve ? extractReservationId(reserve.json) : null;
-  const execute =
-    reservationId
-      ? await executeBoundedJob({
-          baseUrl: config.hosted.baseUrl,
-          reservationId,
-          now: new Date().toISOString(),
-        })
-      : null;
-
-  return {
-    generated_at: new Date().toISOString(),
-    runId: context.runId,
-    campaignId: context.campaignId,
-    ownerWalletAddress: context.ownerWalletAddress,
-    ...buildMetadataEnvelope(config),
-    ...metadata,
-    decision,
-    reserve,
-    execute,
-    ids: {
-      facilityId,
-      reservationId,
-      paymentId: execute ? extractPaymentId(execute.json) : null,
-    },
-    states: {
-      paymentState: execute ? extractPaymentState(execute.json) : null,
-    },
-    txHashes: {
-      boundedJob: execute ? extractPaymentTxHash(execute.json) ?? pickTxHash(execute.json) : null,
-    },
-  };
 }
 
 export async function runHostedGiftAndJobProof(config, options = {}) {
@@ -263,6 +322,12 @@ export function summarizeProofBundle(bundle) {
   const hostedProof = bundle.hostedProof ?? bundle;
   const surfaces = Array.isArray(hostedProof?.proof_surfaces) ? hostedProof.proof_surfaces : listProofSurfaces();
   const session = hostedProof?.sessionStatus?.json?.session ?? null;
+  const merchantId = hostedProof?.merchantId ?? bundle.hosted?.merchant_id ?? null;
+  const requestBody = asRecord(hostedProof?.requestBodyJson) ?? asRecord(bundle.hosted?.request_body_json) ?? null;
+  const swapLike =
+    merchantId === "xlayer_uniswap_swap_exact_in" ||
+    Boolean(requestBody?.pair_key && requestBody?.input_token_address && requestBody?.output_token_address);
+  const swapTxHash = hostedProof?.txHashes?.swap ?? (swapLike ? hostedProof?.txHashes?.boundedJob ?? null : null);
   return {
     generated_at: new Date().toISOString(),
     proof_generated_at: hostedProof?.generated_at ?? bundle.generated_at ?? null,
@@ -277,7 +342,7 @@ export function summarizeProofBundle(bundle) {
     matrica_session_id: session?.session_id ?? bundle.hosted?.matrica_session_id ?? null,
     identity_key: session?.identity_key ?? null,
     session_status: session?.status ?? null,
-    merchant_id: hostedProof?.merchantId ?? bundle.hosted?.merchant_id ?? null,
+    merchant_id: merchantId,
     sponsor_gift_status: hostedProof?.giftFirst?.status ?? null,
     sponsor_gift_tx_hash: hostedProof?.txHashes?.sponsorGift ?? null,
     sponsor_gift_reuse_status: hostedProof?.giftReuse?.status ?? null,
@@ -290,6 +355,19 @@ export function summarizeProofBundle(bundle) {
     bounded_job_status: hostedProof?.execute?.status ?? null,
     bounded_job_payment_state: hostedProof?.states?.paymentState ?? null,
     bounded_job_tx_hash: hostedProof?.txHashes?.boundedJob ?? null,
+    swap_decision_status: swapLike ? hostedProof?.decision?.status ?? null : null,
+    swap_decision_code: swapLike ? hostedProof?.decision?.json?.code ?? null : null,
+    swap_decision_message: swapLike ? hostedProof?.decision?.json?.message ?? null : null,
+    swap_reserve_status: swapLike ? hostedProof?.reserve?.status ?? null : null,
+    swap_status: swapLike ? hostedProof?.execute?.status ?? null : null,
+    swap_payment_state: swapLike ? hostedProof?.states?.paymentState ?? null : null,
+    swap_tx_hash: swapLike ? swapTxHash : null,
+    swap_pair_key: swapLike ? requestBody?.pair_key ?? null : null,
+    swap_input_token_address: swapLike ? requestBody?.input_token_address ?? null : null,
+    swap_output_token_address: swapLike ? requestBody?.output_token_address ?? null : null,
+    swap_exact_input_amount: swapLike ? requestBody?.exact_input_amount ?? null : null,
+    swap_min_output_amount: swapLike ? requestBody?.min_output_amount ?? null : null,
+    swap_max_slippage_bps: swapLike ? requestBody?.max_slippage_bps ?? null : null,
     wallet_cli_installed: bundle.wallet?.installed ?? false,
     x402_payment_required: bundle.x402?.paymentRequired ?? null,
     x402_replay_status: bundle.x402?.replay?.status ?? null,

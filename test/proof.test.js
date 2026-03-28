@@ -90,6 +90,60 @@ test("summarizeProofBundle captures hosted proof statuses", () => {
   assert.equal(summary.x402_replay_status, 200);
 });
 
+test("summarizeProofBundle captures swap proof fields", () => {
+  const summary = summarizeProofBundle({
+    hostedProof: {
+      generated_at: "2026-03-28T12:34:56.000Z",
+      runId: "run_swap_123",
+      campaignId: "campaign_swap_123",
+      ownerWalletAddress: "0x1111111111111111111111111111111111111111",
+      merchantId: "xlayer_uniswap_swap_exact_in",
+      decision: {
+        status: 200,
+        json: {
+          code: null,
+          message: null,
+        },
+      },
+      reserve: {
+        status: 200,
+      },
+      execute: { status: 200 },
+      requestBodyJson: {
+        pair_key: "usdc/wokb",
+        input_token_address: "0x4444",
+        output_token_address: "0x5555",
+        exact_input_amount: "5000000",
+        min_output_amount: "4900000",
+        max_slippage_bps: 50,
+      },
+      states: { paymentState: "confirmed" },
+      sessionStatus: {
+        json: {
+          session: {
+            session_id: "matrica_session_swap_123",
+            status: "approved",
+            identity_key: "identity_swap_123",
+            owner_wallet: "0x1111111111111111111111111111111111111111",
+          },
+        },
+      },
+      txHashes: {
+        boundedJob: "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        swap: "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      },
+    },
+  });
+
+  assert.equal(summary.merchant_id, "xlayer_uniswap_swap_exact_in");
+  assert.equal(summary.swap_status, 200);
+  assert.equal(summary.swap_payment_state, "confirmed");
+  assert.equal(summary.swap_tx_hash, "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd");
+  assert.equal(summary.swap_pair_key, "usdc/wokb");
+  assert.equal(summary.swap_exact_input_amount, "5000000");
+  assert.equal(summary.swap_min_output_amount, "4900000");
+});
+
 test("buildHostedProofContext reuses explicit ids when provided", () => {
   const context = buildHostedProofContext(
     {
