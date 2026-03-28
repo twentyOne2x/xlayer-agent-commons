@@ -5,10 +5,11 @@
   "scripts": {
     "demo:matrica": "node ./scripts/demo.js matrica-start",
     "demo:gift": "node ./scripts/demo.js gift",
+    "demo:proof": "node ./scripts/demo.js proof",
     "demo:wallet": "node ./scripts/demo.js wallet-status",
+    "demo:wallet-addresses": "node ./scripts/demo.js wallet-addresses",
     "demo:x402": "node ./scripts/demo.js x402",
     "demo:full": "node ./scripts/demo.js full",
     "test": "node --test ./test/*.test.js"
   }
 }
-

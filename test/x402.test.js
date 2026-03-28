@@ -45,6 +45,28 @@ test("buildX402PayArgs maps the first accepted option to CLI args", () => {
   ]);
 });
 
+test("buildX402PayArgs supports wallet and chain overrides", () => {
+  const option = pickX402Option(sampleChallenge);
+  assert.deepEqual(buildX402PayArgs(option, { from: "0xabc", chain: "196" }), [
+    "payment",
+    "x402-pay",
+    "--network",
+    "eip155:196",
+    "--amount",
+    "1000000",
+    "--pay-to",
+    "0x1111111111111111111111111111111111111111",
+    "--asset",
+    "0x2222222222222222222222222222222222222222",
+    "--from",
+    "0xabc",
+    "--max-timeout-seconds",
+    "300",
+    "--chain",
+    "196",
+  ]);
+});
+
 test("paymentHeader helpers encode x402 v2 payloads", () => {
   assert.equal(paymentHeaderName(sampleChallenge), "PAYMENT-SIGNATURE");
 
