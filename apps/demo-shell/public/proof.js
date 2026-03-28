@@ -35,6 +35,7 @@ function renderOverview(ledger) {
     ["Wallet", ledger.wallet || "not captured yet"],
     ["Sponsor Tx", ledger.sponsorTxHash || "not captured yet"],
     ["Swap Tx", ledger.swapTxHash || "not captured yet"],
+    ["Swap Summary", ledger.swapHumanSummary || "not captured yet"],
     ["Token Pair", ledger.tokenPair || "not captured yet"],
     ["Exact Input", ledger.swapAmount || "not captured yet"],
     ["Min Output", ledger.swapMinOutputAmount || "not captured yet"],
